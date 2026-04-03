@@ -6,4 +6,7 @@ export const loginWithGoogle = async () => {
   return result.user;
 };
 
-export const logout = () => signOut(auth);
+export const logout = async () => {
+  await signOut(auth);
+  window.location.href = "/";
+};

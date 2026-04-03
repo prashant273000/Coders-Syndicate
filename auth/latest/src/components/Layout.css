@@ -82,13 +82,7 @@ html,body,#root{
   text-align: center;
 }
 
-.logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 30px;
-}
+
 
 .logo-icon {
   background: linear-gradient(135deg, #a855f7, #ec4899);
