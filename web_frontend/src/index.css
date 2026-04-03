@@ -65,13 +65,14 @@ html, body, #root {
     @apply text-black font-bold text-sm md:text-base hover:text-black/70 transition-colors pb-1;
   }
 
-  /* Profile Pill: Subtle Lift */
-  .profile-pill {
-    @apply bg-black text-white px-4 py-2 md:px-6 md:h-11 rounded-full flex justify-center items-center
-           font-bold text-xs md:text-sm hover:bg-neutral-800 transition-all duration-300 shadow-md;
+/* --- Profile Circular Avatar --- */
+  .profile-avatar-btn {
+    @apply size-10 md:size-11 rounded-full bg-black flex justify-center items-center overflow-hidden cursor-pointer transition-all duration-300;
+    
+    /* Subtle hover lift effect */
     &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
     }
   }
 
