@@ -1,7 +1,10 @@
 import { useState } from "react";
-
-
+import "./Layout.css";
+//import Logo from "../assets/logo.png"
 export default function Layout() {
+
+    return <h1>TEST WORKING</h1>;
+
   const [loading, setLoading] = useState(false);
 
 const handleGoogleLogin = async () => {
@@ -68,3 +71,4 @@ const handleGoogleLogin = async () => {
     </div>
   );
 }
+
