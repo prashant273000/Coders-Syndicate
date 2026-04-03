@@ -22,7 +22,7 @@ export default function Layout() {
         },
       });
 
-      navigate("/profile");
+      navigate("/");
     } catch (err) {
       console.error("Login error:", err);
       alert("Login failed");
