@@ -1,111 +1,199 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import url("https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap");
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+/* Update the top of your index.css to this: */
+html, body, #root {
+  width: 100dvw;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: transparent; /* Changed from white to transparent */
+  color: #1a1a1a;
+  scroll-behavior: smooth;
+  font-family: "Mona Sans", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+.video-background {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; 
+  height: 100vh;
+  object-fit: cover;
+  z-index: -10; /* Set to -10 just to be safe */
+  pointer-events: none;
+}
+
+/* --- index.css --- */
+
+@layer components {
+/* --- Navbar Styles --- */
+  .navbar {
+    @apply fixed w-full top-0 left-0 py-5 px-6 md:px-12 z-[100] transition-all duration-300;
+    &.scrolled { @apply bg-white/80 backdrop-blur-md border-b border-black/5; }
+    &.not-scrolled { @apply bg-transparent; }
+    
+    /* CHANGED: Removed max-w-7xl and added w-full to push to boundaries */
+    .inner { @apply w-full mx-auto flex items-center justify-between; }
+    .logo { @apply flex items-center gap-3 text-black text-xl md:text-2xl font-extrabold; }
   }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  /* --- Top-Right Actions --- */
+  .right-actions {
+    @apply flex items-center gap-2 md:gap-5;
   }
-}
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  /* Base Icon Button Styles */
+  .action-icon-btn {
+    @apply size-10 md:size-12 rounded-full bg-black/5 border border-black/10 flex justify-center items-center 
+           text-lg md:text-xl text-black hover:bg-black/10 transition-all duration-300 origin-center;
   }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+  /* 💬 Chatbot Hover: Wiggle Effect */
+  .chat-btn:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    animation: wiggle 0.4s ease-in-out infinite alternate;
   }
-}
-p {
-  margin: 0;
+
+  /* 🌓 Theme Hover: Rotate Effect */
+  .theme-btn:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: rotate(45deg) scale(1.1);
+  }
+
+  /* Login Button Base Style */
+  .login-text {
+    @apply text-black font-bold text-sm md:text-base hover:text-black/70 transition-colors pb-1;
+  }
+
+  /* Profile Pill: Subtle Lift */
+  .profile-pill {
+    @apply bg-black text-white px-4 py-2 md:px-6 md:h-11 rounded-full flex justify-center items-center
+           font-bold text-xs md:text-sm hover:bg-neutral-800 transition-all duration-300 shadow-md;
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+  }
+
+  /* --- New: Mobile Menu Styles --- */
+  .mobile-menu {
+    @apply absolute top-full left-0 w-full bg-white border-b border-black/10 flex flex-col p-5 gap-4 shadow-xl;
+    a { @apply text-lg font-semibold text-black hover:text-black/70; }
+  }
+
+  /* Simple Pop-in Animation for icons */
+  .animate-pop {
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* ======================================================= */
+  /* KEEP YOUR HERO, SLIDER, AND BUTTON STYLES BELOW THIS LINE */
+  /* ======================================================= */
+  .hero-layout { @apply relative z-10 md:h-dvh h-[80vh] flex xl:items-center items-start justify-center; }
+  /* ... rest of your code ... */
+  .hero-text {
+    @apply flex flex-col justify-center md:text-[60px] text-[30px] font-semibold relative z-10 text-black;
+    img { @apply size-8 md:size-10 object-contain; }
+    .slide { @apply absolute pt-0 px-2 md:px-5 py-[30px] h-[48px] md:h-[78px] overflow-hidden; }
+  }
+
+  /* --- Button Animation Styles (Unchanged) --- */
+  .cta-wrapper { @apply relative z-20 cursor-pointer; }
+  .cta-button {
+    @apply px-4 py-4 rounded-lg bg-[#1a1a1a] flex justify-center items-center relative overflow-hidden;
+    .bg-circle {
+      @apply absolute -right-10 origin-center top-1/2 -translate-y-1/2 
+        w-[120%] h-[120%] group-hover:size-10 group-hover:right-10
+        rounded-full bg-white/20 transition-all duration-500;
+    }
+    .text {
+      @apply uppercase md:text-lg text-white transition-all duration-500
+        group-hover:-translate-x-5 xl:translate-x-0 -translate-x-5;
+    }
+    .arrow-wrapper {
+      @apply group-hover:bg-white/10 size-10 rounded-full absolute right-10 top-1/2 
+        -translate-y-1/2 flex justify-center items-center overflow-hidden;
+      img { @apply size-5 xl:-translate-y-32 translate-y-0 animate-bounce group-hover:translate-y-0 transition-all duration-500; filter: invert(1); }
+    }
+  }
+  
+/* --- Watermark Cover Badge --- */
+  .watermark-cover {
+    /* CHANGED: Reduced bottom and right spacing (bottom-1 / bottom-2) to push it deeper into the corner */
+    @apply fixed bottom-1 right-1 md:bottom-2 md:right-2 z-[60];
+    
+    @apply bg-white/20 backdrop-blur-2xl border border-white/50 shadow-lg;
+    @apply rounded-xl flex items-center px-6;
+    
+    height: 52px;
+    min-width: 250px; 
+    justify-content: flex-start; 
+  }
+
+  .typewriter-text {
+    /* CHANGED: Upgraded font-bold to font-black for maximum weight, and text-gray-900 for extra contrast */
+    @apply text-gray-900 text-[30px] md:text-[30px] font-black tracking-widest uppercase;
+  }
+  
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+
+
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* --- Hero & Slider Styles --- */
+  .hero-layout { 
+    @apply relative z-10 min-h-dvh flex items-center justify-start; 
+  }
+  
+  .hero-text {
+    @apply flex flex-col font-bold text-black relative z-10;
+    /* Responsive font sizing */
+    h1 { @apply text-[40px] md:text-[70px] lg:text-[80px]; }
+    h6 { @apply text-[35px] md:text-[60px] lg:text-[70px] leading-tight; }
+  }
+
+  /* Slider specific fixes */
+  .slide { 
+    display: inline-block;
+    overflow: hidden;
+  }
+  
+  .wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    animation: wordSlider 16s infinite cubic-bezier(0.8, 0, 0.2, 1); 
+  }
+
+/* Adjusted animation percentages to match 8 items */
+@keyframes wordSlider {
+  0%, 9%      { transform: translateY(0); }
+  12.5%, 21.5%  { transform: translateY(-12.5%); }
+  25%, 34%      { transform: translateY(-25%); }
+  37.5%, 46.5%  { transform: translateY(-37.5%); }
+  50%, 59%      { transform: translateY(-50%); }
+  62.5%, 71.5%  { transform: translateY(-62.5%); }
+  75%, 84%      { transform: translateY(-75%); }
+  87.5%, 96.5%  { transform: translateY(-87.5%); }
+  100%          { transform: translateY(-100%); }
+}
+
+@keyframes wiggle {
+  0% { transform: rotate(0deg) scale(1.1); }
+  33% { transform: rotate(-10deg) scale(1.1); }
+  66% { transform: rotate(10deg) scale(1.1); }
+  100% { transform: rotate(0deg) scale(1.1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+  @apply ml-1 font-light opacity-60;
 }
