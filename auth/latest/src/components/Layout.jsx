@@ -1,6 +1,6 @@
 import { useState } from "react";
-import "./layout.css";
-import Logo from "../assets/logo.png"
+
+
 export default function Layout() {
   const [loading, setLoading] = useState(false);
 
