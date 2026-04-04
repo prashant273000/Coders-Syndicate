@@ -1,21 +1,29 @@
 /**
  * Navigation links for the NavBar
  */
-const navLinks = [
+/**
+ * Navigation links for the NavBar
+ */
+export const navLinks = [
   {
     name: "Home",
-    link: "#home",
+    link: "/", // <-- Changed from "#home" to "/"
   },
   {
     name: "About Us",
-    link: "#aboutus",
+    link: "/about", // <-- Changed from "#aboutus" to "/about"
   },
   {
     name: "Help",
-    link: "#help",
+    link: "/help", // <-- Changed from "#help" to "/help"
   },
-  { name: "Leaderboard", link: "/leaderboard" },
+  { 
+    name: "Leaderboard", 
+    link: "/leaderboard" 
+  },
 ];
+
+// ... rest of your file (words array) stays the exact same
 
 /**
  * Words for the Hero Section vertical slider.
@@ -83,5 +91,4 @@ export {
   socialImgs,
   techStackIcons,
   techStackImgs,
-  navLinks,
 };
