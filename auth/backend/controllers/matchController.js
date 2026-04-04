@@ -54,8 +54,11 @@ const findMatch = async (req, res) => {
 };
 
 const endMatch = async (req, res) => {
+
   try {
     const { matchId, winnerId } = req.body;
+    console.log("🏆 Match ended, winner:", winnerId); // ← logs AFTER
+    console.log("📊 Updating user stats...")
 
     const match = await Match.findById(matchId);
 
