@@ -1,14 +1,15 @@
-import ExploreCards from "./sections/ExploreCards"; 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useContext } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 
 import Navbar from "./components/NavBar";
 import Hero from "./sections/Hero";
 import VideoBG from "./components/VideoBG";
 import AnimatedBadge from "./components/AnimatedBadge";
+import ExploreCards from "./sections/ExploreCards";
 import Layout from "./components/Layout";
+import Documentation from "./pages/Documentation";
 
+// ---- Pages ----
 const HomePage = () => (
   <main className="relative">
     <VideoBG />
@@ -18,36 +19,22 @@ const HomePage = () => (
     <AnimatedBadge />
   </main>
 );
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import Documentation from "./pages/Documentation";
 
-const App = () => {
-  return (
-    <Router>
-      <Routes>
-        {/* If the URL is exactly "/", load the Home page */}
-        <Route path="/" element={<Home />} />
-        
-        {/* If the URL is "/documentation", load the new Document page */}
-        <Route path="/documentation" element={<Documentation />} />
-      </Routes>
-    </Router>
-  );
-};
-
+// ---- Login route guard ----
 const LoginRoute = () => {
   const { user } = useContext(AuthContext);
   if (user) return <Navigate to="/" replace />;
   return <Layout />;
 };
 
+// ---- Root App ----
 const App = () => (
   <AuthProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginRoute />} />
+        <Route path="/documentation" element={<Documentation />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
