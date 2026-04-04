@@ -79,13 +79,17 @@ const ExploreCards = () => {
 
         <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full">
           
-          <a href="#arena" className="action-explore-card group w-full md:w-1/2">
+{/* --- UPDATED ARENA CARD --- */}
+          <div 
+            onClick={() => navigate('/arena')} 
+            className="action-explore-card group w-full md:w-1/2 cursor-pointer"
+          >
             <span className="absolute top-6 right-6 text-white text-2xl opacity-80">⚔️</span>
             <h4 className="text-white font-black text-3xl md:text-4xl tracking-widest uppercase transition-transform duration-300 group-hover:scale-105">
               Arena
             </h4>
-          </a>
-
+            
+          </div>
           {/* Documentation Card (Uses Navigate to go to new page) */}
           <div
             onClick={() => navigate('/documentation')}

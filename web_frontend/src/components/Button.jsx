@@ -1,30 +1,59 @@
-const Button = ({ text, className, id }) => {
+import { words } from "../constants";
+import Button from "../components/Button"; // Make sure this is imported!
+
+const Hero = () => {
   return (
-    <a
-      href={`#${id}`}
-      onClick={(e) => {
-        e.preventDefault(); 
+    <section id="hero" className="relative w-full overflow-hidden">
+      {/* Added 'pt-24 md:pt-32' to push content below the fixed navbar */}
+      <div className="hero-layout pt-24 md:pt-32">
+        
+        {/* CHANGED: max-w-7xl is now max-w-5xl to push content more towards the center */}
+        <header className="flex flex-col justify-center w-full px-6 md:px-12">
+          <div className="flex flex-col gap-5 md:gap-7">
+            
+            <div className="hero-text">
+              <h1 className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 leading-tight">
+                <span>Featuring</span>
+                
+                <span className="slide relative inline-block h-[50px] md:h-[80px] w-[360px] sm:w-[400px] md:w-[550px] lg:w-[700px]">
+                  <span className="wrapper absolute top-0 left-0 w-full whitespace-nowrap">
+                    {words.map((word, index) => (
+                      <span key={index} className="flex items-center gap-2 md:gap-4 h-[50px] md:h-[80px]">
+                        <img 
+                          src={word.imgPath} 
+                          alt="icon" 
+                          className="size-8 md:size-12 p-1.5 md:p-2 rounded-full bg-black/10 shrink-0" 
+                        />
+                        <span className="text-black">{word.text}</span>
+                      </span>
+                    ))}
+                  </span>
+                </span>
+              </h1>
+              
+              <h6 className="mt-2 md:mt-4 text-black">Documentation for</h6>
+              <h6 className="text-black">Doers</h6>
+            </div>
 
-        // FIXED: Now it dynamically uses the 'id' we pass to it instead of hardcoding "counter"
-        const target = document.getElementById(id); 
+            {/* CHANGED: text-black/70 is now text-black font-medium for darker visibility */}
+            <p className="text-black font-medium md:text-xl max-w-2xl mt-4 relative z-10">
+              Turning concepts into code, and code into impact.
+            </p>
 
-        if (target) {
-          const offset = window.innerHeight * 0.15; 
-          const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top, behavior: "smooth" });
-        }
-      }}
-      className={`${className ?? ""} cta-wrapper`} 
-    >
-      <div className="cta-button group">
-        <div className="bg-circle" />
-        <p className="text">{text}</p>
-        <div className="arrow-wrapper">
-          <img src="/images/arrow-down.svg" alt="arrow" />
-        </div>
+            {/* ========================================= */}
+            {/* --- RECONNECTED CUSTOM BUTTON COMPONENT --- */}
+            {/* ========================================= */}
+            <Button
+              text="EXPLORE"
+              className="w-[200px] md:w-60 h-12 md:h-14 mt-6 relative z-20 cursor-pointer"
+              id="explore-cards" 
+            />
+
+          </div>
+        </header>
       </div>
-    </a>
+    </section>
   );
 };
 
-export default Button;
+export default Hero;

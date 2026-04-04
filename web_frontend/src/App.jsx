@@ -9,6 +9,8 @@ import AnimatedBadge from "./components/AnimatedBadge";
 import ExploreCards from "./sections/ExploreCards";
 import Layout from "./components/Layout";
 import Documentation from "./pages/Documentation";
+import Home from "./pages/Home";
+import Arena from "./pages/Arena";
 
 // ---- Pages ----
 const HomePage = () => (
@@ -26,6 +28,10 @@ const LoginRoute = () => {
   const { user } = useContext(AuthContext);
   if (user) return <Navigate to="/" replace />;
   return <Layout />;
+
+
+
+
 };
 
 // ---- Root App ----
@@ -37,6 +43,7 @@ const App = () => (
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/documentation" element={<Documentation />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/arena" element={<Arena />} />
       </Routes>
     </BrowserRouter>
   </AuthProvider>
