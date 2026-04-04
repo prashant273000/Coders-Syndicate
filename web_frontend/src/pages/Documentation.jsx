@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Navbar from "../components/NavBar";
-
+import axios from "axios";
 const Documentation = () => {
   const [topic, setTopic] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
@@ -9,40 +9,25 @@ const Documentation = () => {
   const [curriculum, setCurriculum] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
 
-  const handleRun = () => {
+  const handleRun = async() => {
     if (!topic.trim()) return;
 
     setHasSearched(true);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const mockBackendResponse = [
-        { 
-          id: 1, title: "Introduction & Setup", status: "completed", icon: "🌟", 
-          content: "Welcome to the module! In this section, we will cover the foundational concepts and ensure your local environment is configured properly. You will learn how to install the required dependencies and verify your setup." 
-        },
-        { 
-          id: 2, title: "Core Fundamentals", status: "completed", icon: "🧠", 
-          content: "Now that we are set up, let's dive into the core mechanics. We will explore the primary data structures, how the main loop operates, and the lifecycle of a basic request." 
-        },
-        { 
-          id: 3, title: "Advanced Patterns", status: "active", icon: "🔥", 
-          content: "This is where things get interesting. We are moving beyond the basics to look at design patterns, optimization techniques, and how to structure code for large-scale applications." 
-        },
-        { 
-          id: 4, title: "State Management", status: "locked", icon: "🛠️", 
-          content: "This content is currently locked. Complete the 'Advanced Patterns' section to unlock this module." 
-        },
-        { 
-          id: 5, title: "Backend Integration", status: "locked", icon: "🔌", 
-          content: "This content is currently locked. Progress further in the curriculum to unlock." 
-        },
-      ];
-      
-      setCurriculum(mockBackendResponse);
-      setSelectedNode(mockBackendResponse[0]); 
-      setIsLoading(false);
-    }, 800); 
+   try {
+    const res = await axios.post("http://localhost:5000/api/roadmap", {
+      topic: topic,
+    });
+
+    const data = res.data;
+    setCurriculum(data);
+    setSelectedNode(data[0]);
+    }
+    catch(err){
+      console.error(err);
+    }
+    setIsLoading(false);
   };
 
   return (
