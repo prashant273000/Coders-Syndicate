@@ -7,8 +7,11 @@ const FriendRequestToast = ({ request, onAccept, onDecline }) => {
   if (!request) return null;
 
   const handleAction = (action) => {
+    const requestId = request.id || request._id;
+
     setIsClosing(true); // Trigger slide-out animation
     setTimeout(() => {
+      
       if (action === "accept") onAccept(request.id);
       if (action === "decline") onDecline(request.id);
     }, 300); // Wait for animation to finish
@@ -41,7 +44,7 @@ const FriendRequestToast = ({ request, onAccept, onDecline }) => {
             {request.photoURL ? (
               <img src={request.photoURL} alt={request.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-xl font-black text-purple-600">{request.name.charAt(0)}</span>
+              <span className="text-xl font-black text-purple-600">{request.name?.charAt(0) || "?"}</span>
             )}
           </div>
 
