@@ -149,6 +149,8 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/voice", require("./routes/voice"));
+app.use("/api/friends", require("./routes/friends"));
+app.use("/api/match", require("./routes/match"));
 // Test route (optional)
 app.get("/", (req, res) => {
   res.send("Backend running ✅");

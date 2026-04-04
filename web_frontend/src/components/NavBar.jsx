@@ -5,11 +5,13 @@ import { navLinks } from "../constants";
 import { AuthContext } from "../context/AuthContext";
 import { logout } from "../services/auth";
 import { HiOutlineUserAdd } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
+
 
 const NavBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  
+  const navigate = useNavigate();
   // Modal States
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -427,6 +429,34 @@ const handleDeclineRequest = async (requestId) => {
   }
 };
 
+  const handleAcceptMatchInvite = async (matchId) => {
+  try {
+    const res = await fetch("http://localhost:5000/api/match/accept-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        matchId,
+        uid: dbUser.uid,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to accept invite");
+    }
+
+    // 🚀 THIS IS THE IMPORTANT LINE
+    navigate(`/battle/${data.roomId}`);
+
+  } catch (err) {
+    console.error("Match accept failed:", err);
+    alert(err.message);
+  }
+};
+
   const displayUser = dbUser
     ? {
         name: dbUser.name, email: dbUser.email, photoURL: dbUser.picture,
@@ -440,6 +470,10 @@ const handleDeclineRequest = async (requestId) => {
         docsRead: 0, battlesWon: 0, battlesLost: 0,
       }
     : null;
+
+    console.log("user:", user);
+    console.log("dbUser:", dbUser);
+    console.log("friendSearchQuery:", friendSearchQuery);
 
   return (
     <>
@@ -723,9 +757,16 @@ const handleDeclineRequest = async (requestId) => {
           </div>
         </div>
       )}
-          <FriendRequestToast
+      <FriendRequestToast
       request={incomingRequests[0] || null}
-      onAccept={handleAcceptRequest}
+      onAccept={(id) => {
+        // ⚠️ TEMP: detect if it's friend request or match
+        if (incomingRequests[0]?.roomId) {
+          handleAcceptMatchInvite(id);
+        } else {
+          handleAcceptRequest(id);
+        }
+      }}
       onDecline={handleDeclineRequest}
     />
     </>

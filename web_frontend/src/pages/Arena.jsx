@@ -6,21 +6,66 @@ import { AuthContext } from "../context/AuthContext";
 
 const Arena = () => {
   const [isSearching, setIsSearching] = useState(false);
-  
-  // --- NEW: FRIEND INVITE STATES ---
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [pendingInvite, setPendingInvite] = useState(null); // Tracks who we are waiting for
+const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+const [pendingInvite, setPendingInvite] = useState(null);
+const [friends, setFriends] = useState([]);
+const [dbUser, setDbUser] = useState(null);
 
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate(); 
+const { user } = useContext(AuthContext);
+const navigate = useNavigate();
 
-  // --- NEW: MOCK FRIENDS LIST ---
-  const mockFriends = [
-    { id: "1", name: "AlexChen_99", photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex", status: "Online" },
-    { id: "2", name: "SarahDev", photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah", status: "In a Battle" },
-    { id: "3", name: "CodeNinja", photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ninja", status: "Online" },
-    { id: "4", name: "ByteKing", photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Byte", status: "Offline" },
-  ];
+
+useEffect(() => {
+  const fetchUserFromBackend = async () => {
+    if (!user) {
+      setDbUser(null);
+      return;
+    }
+
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("http://localhost:5000/api/auth", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setDbUser(data.user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch backend user:", err);
+    }
+  };
+
+  fetchUserFromBackend();
+}, [user]);
+
+useEffect(() => {
+  const fetchFriends = async () => {
+    if (!dbUser?.uid) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/friends/list/${dbUser.uid}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        const formattedFriends = data.map((friend) => ({
+          ...friend,
+          status: "Online",
+        }));
+        setFriends(formattedFriends);
+      }
+    } catch (err) {
+      console.error("Failed to fetch friends:", err);
+    }
+  };
+
+  fetchFriends();
+}, [dbUser]);
 
   // Simulate finding a match after 3.5 seconds (Quick Match)
   useEffect(() => {
@@ -28,26 +73,13 @@ const Arena = () => {
     if (isSearching) {
       timeout = setTimeout(() => {
         setIsSearching(false); // Close loader
-        navigate("/battle"); // GO TO BATTLE!
+        navigate(`/battle/${roomId}`);// GO TO BATTLE!
       }, 3500); 
     }
     return () => clearTimeout(timeout);
   }, [isSearching, navigate]);
 
-  // --- NEW: SIMULATE FRIEND ACCEPTING INVITE ---
-  useEffect(() => {
-    let timeout;
-    if (pendingInvite) {
-      // Simulate the friend accepting the invite after 3 seconds
-      timeout = setTimeout(() => {
-        setPendingInvite(null);
-        setIsInviteModalOpen(false);
-        navigate("/battle"); // Jump to battle!
-      }, 3000);
-    }
-    return () => clearTimeout(timeout);
-  }, [pendingInvite, navigate]);
-
+  
   // --- UPDATED: HANDLE CLICK FOR DIFFERENT MODES ---
   const handleModeClick = (modeId) => {
     if (modeId === "quick") {
@@ -57,13 +89,35 @@ const Arena = () => {
     }
   };
 
-  const handleSendInvite = (friend) => {
-    if (friend.status === "Offline" || friend.status === "In a Battle") {
-      alert(`${friend.name} is currently unavailable.`);
-      return;
+ const handleSendInvite = async (friend) => {
+  try {
+    const res = await fetch("http://localhost:5000/api/match/invite-friend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        senderUid: dbUser.uid,
+        friendUid: friend.uid,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error);
     }
-    setPendingInvite(friend); // Triggers the waiting screen
-  };
+
+    setPendingInvite({
+      ...friend,
+      roomId: data.roomId,
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
 
   const handleCloseInviteModal = () => {
     setIsInviteModalOpen(false);
@@ -217,7 +271,7 @@ const Arena = () => {
             {/* STATE 1: SHOW FRIENDS LIST */}
             {!pendingInvite ? (
               <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2 relative z-10">
-                {mockFriends.map((friend) => (
+                {friends.map((friend) => (
                   <div key={friend.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 bg-white hover:border-purple-200 hover:shadow-md transition-all group">
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -263,9 +317,11 @@ const Arena = () => {
                   </div>
                 </div>
                 
-                <h3 className="text-xl font-black text-gray-900 mb-1 text-center">Invited {pendingInvite.name}</h3>
+                <h3 className="text-xl font-black text-gray-900 mb-1 text-center">
+                  Invited {pendingInvite.name}
+                </h3>
                 <p className="text-sm font-bold text-cyan-600 uppercase tracking-widest animate-pulse">
-                  Awaiting Acceptance...
+                  Waiting for acceptance...
                 </p>
                 
                 <button 
