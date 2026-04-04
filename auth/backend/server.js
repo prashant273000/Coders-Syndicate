@@ -1,9 +1,13 @@
-//require("dotenv").config();
+require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
 
 const app = express();
+
+console.log("MONGO_URI", process.env.MONGO_URI)
+const connectDB = require("./config/db");
+connectDB();
 
 // Firebase Admin Setup
 const serviceAccount = require("./serviceAccountKey.json");
