@@ -23,6 +23,8 @@ const NavBar = () => {
 
       try {
         const token = await user.getIdToken();
+        console.log(token);
+
 
         const res = await fetch("http://localhost:5000/api/auth", {
           method: "POST",
