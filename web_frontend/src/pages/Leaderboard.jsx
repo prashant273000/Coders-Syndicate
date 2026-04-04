@@ -1,34 +1,20 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/NavBar";
+import { useAuth } from "../hooks/useAuth";
+
+const topPlayers = [
+  { rank: 1, name: "AlexChen_99", league: "Grandmaster", tier: "Apex Tier", xp: "142,000" },
+  { rank: 2, name: "SarahDev", league: "Grandmaster", tier: "Apex Tier", xp: "138,500" },
+  { rank: 3, name: "CodeNinja", league: "Grandmaster", tier: "Apex Tier", xp: "135,200" },
+  { rank: 4, name: "ByteKing", league: "Champion's League", tier: "Diamond Tier", xp: "98,400" },
+  { rank: 5, name: "LogicPro", league: "Champion's League", tier: "Diamond Tier", xp: "96,100" },
+];
 
 const Leaderboard = () => {
-  // Mocking the EXACT user data from your NavBar
-  const currentUser = {
-    name: "Hacker",
-    rank: "Diamond Tier",
-    league: "Champion's League",
-    currentRank: 1024,
-    xpEarned: "24,500",
-    photoURL: null 
-  };
-
-  // Mock data for the top players on the leaderboard
-  const topPlayers = [
-    { rank: 1, name: "AlexChen_99", league: "Grandmaster", tier: "Apex Tier", xp: "142,000", isUser: false },
-    { rank: 2, name: "SarahDev", league: "Grandmaster", tier: "Apex Tier", xp: "138,500", isUser: false },
-    { rank: 3, name: "CodeNinja", league: "Grandmaster", tier: "Apex Tier", xp: "135,200", isUser: false },
-    { rank: 4, name: "ByteKing", league: "Champion's League", tier: "Diamond Tier", xp: "98,400", isUser: false },
-    { rank: 5, name: "LogicPro", league: "Champion's League", tier: "Diamond Tier", xp: "96,100", isUser: false },
-    { rank: 6, name: "ReactMaster", league: "Champion's League", tier: "Platinum Tier", xp: "82,000", isUser: false },
-    { rank: 7, name: "BugSquasher", league: "Champion's League", tier: "Platinum Tier", xp: "79,500", isUser: false },
-  ];
+  const { currentUser } = useAuth();
 
   return (
     <main className="min-h-screen w-full flex flex-col font-['Mona_Sans',sans-serif] bg-slate-50 overflow-hidden relative">
-      
-      {/* ========================================= */}
-      {/* --- PAGE SPECIFIC CSS & BACKGROUND ---    */}
-      {/* ========================================= */}
       <style>{`
         header.navbar {
           background-color: rgba(255, 255, 255, 0.7) !important;
@@ -37,7 +23,6 @@ const Leaderboard = () => {
         }
       `}</style>
 
-      {/* The Blurred Orbs Background */}
       <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-purple-600/20 rounded-full filter blur-[100px] animate-blob"></div>
         <div className="absolute top-[15%] right-[-5%] w-[35vw] h-[35vw] max-w-[450px] max-h-[450px] bg-pink-600/20 rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
@@ -48,84 +33,20 @@ const Leaderboard = () => {
         <Navbar />
       </div>
 
-      {/* ========================================= */}
-      {/* --- LEADERBOARD CONTENT ---               */}
-      {/* ========================================= */}
-      <div className="relative z-10 flex-grow flex flex-col items-center pt-24 md:pt-32 px-4 md:px-6 pb-20 w-full max-w-6xl mx-auto">
-        
-        {/* Page Title */}
-        <div className="w-full text-center mb-8 animate-fade-in">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 uppercase tracking-tight drop-shadow-sm">
+      <div className="relative z-10 flex-grow flex flex-col items-center pt-24 md:pt-32 px-4 md:px-6 pb-20 w-full max-w-4xl mx-auto">
+        <div className="w-full text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 uppercase tracking-tight">
             Global Rankings
           </h1>
-          <p className="text-gray-500 font-semibold mt-2">See where you stand among the best.</p>
+          <p className="text-gray-500 font-semibold mt-2">Demo leaderboard — climb the ranks in the arena.</p>
+          {currentUser && (
+            <Link to="/chat" className="inline-block mt-4 text-sm font-black uppercase text-purple-600 hover:underline">
+              Squad chat
+            </Link>
+          )}
         </div>
 
-        {/* ========================================= */}
-        {/* 1. TOP SECTION: CURRENT USER DASHBOARD    */}
-        {/* ========================================= */}
-        <div className="w-full bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-6 md:p-8 shadow-xl shadow-purple-900/5 mb-10 animate-slide-up flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-          
-          {/* Left: Profile Pic & Name */}
-          <div className="flex items-center gap-5 w-full md:w-auto justify-center md:justify-start">
-            <div className="size-16 md:size-20 rounded-full bg-black flex items-center justify-center text-3xl font-black text-white shadow-lg border-4 border-white shrink-0">
-              {currentUser.photoURL ? (
-                <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover rounded-full" />
-              ) : (
-                currentUser.name.charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Your Standing</p>
-              <h2 className="text-2xl font-black text-gray-900 leading-none">{currentUser.name}</h2>
-              <p className="text-sm font-bold text-purple-600 mt-1">Rank #{currentUser.currentRank}</p>
-            </div>
-          </div>
-
-          {/* Desktop Divider */}
-          <div className="hidden md:block w-px h-16 bg-gray-200"></div>
-
-          {/* Middle 1: Rank/Tier */}
-          <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-            <div className="size-12 rounded-full bg-indigo-50 flex items-center justify-center text-2xl shadow-inner border border-indigo-100">🏆</div>
-            <div className="text-center md:text-left">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Tier</p>
-              <h3 className="text-lg font-black text-gray-900 leading-none">{currentUser.rank}</h3>
-            </div>
-          </div>
-
-          {/* Desktop Divider */}
-          <div className="hidden md:block w-px h-16 bg-gray-200"></div>
-
-          {/* Middle 2: League */}
-          <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-            <div className="size-12 rounded-full bg-purple-50 flex items-center justify-center text-2xl shadow-inner border border-purple-100">⚔️</div>
-            <div className="text-center md:text-left">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Active League</p>
-              <h3 className="text-lg font-black text-gray-900 leading-none">{currentUser.league}</h3>
-            </div>
-          </div>
-
-          {/* Desktop Divider */}
-          <div className="hidden md:block w-px h-16 bg-gray-200"></div>
-
-          {/* Right: XP */}
-          <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-            <div className="size-12 rounded-full bg-orange-50 flex items-center justify-center text-2xl shadow-inner border border-orange-100">⚡</div>
-            <div className="text-center md:text-left">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total XP</p>
-              <h3 className="text-lg font-black text-orange-600 leading-none">{currentUser.xpEarned}</h3>
-            </div>
-          </div>
-
-        </div>
-
-        {/* ========================================= */}
-        {/* 2. BOTTOM SECTION: LEADERBOARD TABLE      */}
-        {/* ========================================= */}
-        <div className="w-full bg-white/60 backdrop-blur-lg border border-white/80 rounded-3xl p-4 md:p-8 shadow-lg animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          
-          {/* Table Header */}
+        <div className="w-full bg-white/60 backdrop-blur-lg border border-white/80 rounded-3xl p-4 md:p-8 shadow-lg">
           <div className="hidden md:grid grid-cols-[80px_1fr_1.5fr_120px] gap-4 px-6 py-4 border-b border-gray-200 mb-4">
             <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Rank</div>
             <div className="text-xs font-black text-gray-400 uppercase tracking-widest">Player</div>
@@ -133,76 +54,24 @@ const Leaderboard = () => {
             <div className="text-xs font-black text-gray-400 uppercase tracking-widest text-right">XP</div>
           </div>
 
-          {/* Table Rows (Top Players) */}
           <div className="flex flex-col gap-3">
-            {topPlayers.map((player) => (
-              <div 
-                key={player.rank} 
-                className="grid grid-cols-1 md:grid-cols-[80px_1fr_1.5fr_120px] gap-2 md:gap-4 items-center px-6 py-4 bg-white/80 hover:bg-white rounded-2xl shadow-sm border border-transparent hover:border-purple-100 transition-all duration-200 hover:-translate-y-0.5"
-              >
-                {/* Rank */}
-                <div className="flex items-center gap-2">
-                  <span className="md:hidden text-xs font-bold text-gray-400 uppercase">Rank: </span>
-                  <div className={`size-8 rounded-full flex items-center justify-center font-black text-sm ${
-                    player.rank === 1 ? "bg-yellow-100 text-yellow-600" :
-                    player.rank === 2 ? "bg-gray-200 text-gray-600" :
-                    player.rank === 3 ? "bg-orange-100 text-orange-700" :
-                    "text-gray-500"
-                  }`}>
-                    #{player.rank}
+            {Array.isArray(topPlayers) &&
+              topPlayers.map((player) => (
+                <div
+                  key={player.rank}
+                  className="grid grid-cols-1 md:grid-cols-[80px_1fr_1.5fr_120px] gap-2 md:gap-4 items-center px-6 py-4 bg-white/80 rounded-2xl shadow-sm border border-transparent hover:border-purple-100 transition-all"
+                >
+                  <div className="font-black text-gray-600">#{player.rank}</div>
+                  <div className="font-black text-gray-900">{player.name}</div>
+                  <div>
+                    <span className="font-bold text-gray-800 text-sm">{player.league}</span>
+                    <span className="text-xs font-bold text-gray-500 block">{player.tier}</span>
                   </div>
+                  <div className="font-black text-purple-600 text-right">{player.xp}</div>
                 </div>
-
-                {/* Player Name */}
-                <div className="font-black text-gray-900 truncate text-lg">
-                  {player.name}
-                </div>
-
-                {/* League & Tier */}
-                <div className="flex flex-col">
-                  <span className="font-bold text-gray-800 text-sm">{player.league}</span>
-                  <span className="text-xs font-bold text-gray-500">{player.tier}</span>
-                </div>
-
-                {/* XP */}
-                <div className="font-black text-purple-600 text-right text-lg">
-                  {player.xp}
-                </div>
-              </div>
-            ))}
-
-            {/* Visual separator indicating a jump in ranks */}
-            <div className="w-full flex justify-center py-2">
-              <div className="flex gap-1.5 opacity-30">
-                <div className="size-2 rounded-full bg-black"></div>
-                <div className="size-2 rounded-full bg-black"></div>
-                <div className="size-2 rounded-full bg-black"></div>
-              </div>
-            </div>
-
-            {/* Current User Row (Glued to bottom of list) */}
-            <div className="grid grid-cols-1 md:grid-cols-[80px_1fr_1.5fr_120px] gap-2 md:gap-4 items-center px-6 py-4 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-600/20 border border-indigo-400 transform scale-[1.02]">
-              <div className="flex items-center gap-2">
-                <span className="md:hidden text-xs font-bold text-indigo-300 uppercase">Rank: </span>
-                <div className="size-8 rounded-full flex items-center justify-center font-black text-sm bg-indigo-500 text-white border border-indigo-400">
-                  #{currentUser.currentRank}
-                </div>
-              </div>
-              <div className="font-black text-white truncate text-lg flex items-center gap-2">
-                {currentUser.name} <span className="text-xs bg-indigo-500 px-2 py-0.5 rounded-full uppercase tracking-wider">You</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-white text-sm">{currentUser.league}</span>
-                <span className="text-xs font-bold text-indigo-200">{currentUser.rank}</span>
-              </div>
-              <div className="font-black text-yellow-300 text-right text-lg">
-                {currentUser.xpEarned}
-              </div>
-            </div>
-
+              ))}
           </div>
         </div>
-
       </div>
     </main>
   );

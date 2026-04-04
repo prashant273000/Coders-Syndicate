@@ -25,6 +25,9 @@ const Arena = () => {
     if (modeId === "quick") {
       setIsSearching(true);
     }
+    if (modeId === "clans") {
+      navigate("/chat");
+    }
   };
 
   const gameModes = [
@@ -57,9 +60,9 @@ const Arena = () => {
     },
     {
       id: "clans",
-      title: "🐺 CLANS",
-      description: "Form a squad of 4 members to fight rival clans.",
-      btnText: "CREATE CLAN",
+      title: "💬 SQUAD CHAT",
+      description: "Drop into live world and private chat with your syndicate.",
+      btnText: "OPEN CHAT",
       borderColor: "border-pink-400",
       glowClass: "group-hover:shadow-[0_15px_40px_rgba(236,72,153,0.25)]",
       btnClass: "bg-pink-500 hover:bg-pink-600 text-white shadow-md shadow-pink-500/30",

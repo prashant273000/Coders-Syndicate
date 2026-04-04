@@ -7,9 +7,22 @@ const handleAuth = async (req, res) => {
     let user = await User.findOne({ uid });
 
     if (!user) {
-      user = await User.create({ uid, name, email, picture });
+      user = await User.create({
+        uid,
+        name: name || "",
+        email: email || "",
+        picture: picture || "",
+        username: name || email || uid,
+        avatar: picture || "",
+      });
       console.log("🆕 New user created:", email);
     } else {
+      user.name = name || user.name;
+      user.email = email || user.email;
+      user.picture = picture ?? user.picture;
+      user.username = user.username || name || user.name || email;
+      user.avatar = user.avatar || picture || user.picture || "";
+      await user.save();
       console.log("✅ Existing user found:", email);
     }
 
@@ -20,6 +33,8 @@ const handleAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        username: user.username || user.name,
+        avatar: user.avatar || user.picture || "",
         createdAt: user.createdAt,
       },
     });

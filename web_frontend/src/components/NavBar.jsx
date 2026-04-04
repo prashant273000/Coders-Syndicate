@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { navLinks } from "../constants";
 import { AuthContext } from "../context/AuthContext";
 import { logout } from "../services/auth";
+import { syncUser } from "../services/chatService";
 import { HiOutlineUserAdd } from "react-icons/hi";
 
 const NavBar = () => {
@@ -96,7 +97,6 @@ const NavBar = () => {
         setDbUser(null);
         return;
       }
-      if (dbUser && dbUser.uid === user.uid) return;
       try {
         const token = await user.getIdToken();
         const res = await fetch("http://localhost:5000/api/auth", {
@@ -104,7 +104,13 @@ const NavBar = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        setDbUser(data.user); 
+        setDbUser(data.user);
+        await syncUser({
+          uid: user.uid,
+          username: user.displayName || user.email || user.uid,
+          email: user.email || "",
+          avatar: user.photoURL || "",
+        });
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }

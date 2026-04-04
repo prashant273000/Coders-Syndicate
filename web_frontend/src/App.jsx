@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Battle from "./pages/Battle";
 import Arena from "./pages/Arena";
 import Leaderboard from "./pages/Leaderboard";
+import ChatPage from "./pages/ChatPage";
 
 // ---- Pages ----
 const HomePage = () => (
@@ -44,10 +45,11 @@ const App = () => (
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/documentation" element={<Documentation />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/arena" element={<Arena />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/battle" element={<Battle />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   </AuthProvider>

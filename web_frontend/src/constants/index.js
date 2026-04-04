@@ -15,6 +15,7 @@ const navLinks = [
     link: "#help",
   },
   { name: "Leaderboard", link: "/leaderboard" },
+  { name: "Chat", link: "/chat" },
 ];
 
 /**

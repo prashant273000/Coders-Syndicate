@@ -129,6 +129,8 @@ async function crawl(input) {
         console.error(err);
     }
 }
+const http = require("http");
+const { Server } = require("socket.io");
 const app = express();
 
 console.log("MONGO_URI", process.env.MONGO_URI)
@@ -142,13 +144,24 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+const FRONTEND_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: FRONTEND_ORIGINS,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/voice", require("./routes/voice"));
+app.use("/chat", require("./routes/chat"));
 // Test route (optional)
 app.get("/", (req, res) => {
   res.send("Backend running ✅");
@@ -184,8 +197,18 @@ app.post("/api/content", async (req, res) => {
     });
   }
 });
-// Start server
 const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: FRONTEND_ORIGINS,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+require("./socket/chatSocket")(io);
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server + Socket.io on http://localhost:${PORT}`);
 });
