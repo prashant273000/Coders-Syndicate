@@ -24,10 +24,11 @@ const NavBar = () => {
   const [chatInput, setChatInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
+  
+  // Refs (From Second Navbar)
   const chatScrollRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-
 
   const [selectionTooltip, setSelectionTooltip] = useState({ show: false, x: 0, y: 0, text: "" });
 
@@ -123,24 +124,6 @@ const NavBar = () => {
     }
   }, [messages, isAiTyping]);
 
-  const sendAudioToBackend = async (audioBlob) => {
-  const formData = new FormData();
-  formData.append("audio", audioBlob, "recording.webm");
-
-  const res = await fetch("http://localhost:5000/api/voice/ask", {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Voice request failed");
-  }
-
-  return data;
-};
-
   const handleLogout = async () => {
     await logout();
     setDbUser(null);
@@ -148,24 +131,151 @@ const NavBar = () => {
     setIsOpen(false); 
   };
 
-  const handleSendMessage = (e) => {
+  // =========================================
+  // --- REAL BACKEND LOGIC (From Second Navbar) ---
+  // =========================================
+  const sendAudioToBackend = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.webm");
+
+    const res = await fetch("http://localhost:5000/api/voice/ask", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Voice request failed");
+    }
+
+    return data;
+  };
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    const newUserMsg = { id: Date.now(), sender: "user", text: chatInput };
+
+    const userMessage = chatInput.trim();
+
+    const newUserMsg = {
+      id: Date.now(),
+      sender: "user",
+      text: userMessage,
+    };
+
     setMessages((prev) => [...prev, newUserMsg]);
     setChatInput("");
     setIsAiTyping(true);
-    setTimeout(() => {
-      const aiResponse = { id: Date.now() + 1, sender: "ai", text: "Advanced Patterns involve higher-level architecture like State Management and Custom Hooks. Let's break it down step-by-step!" };
+
+    try {
+      const res = await fetch("http://localhost:5000/api/voice/text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Text chat failed");
+      }
+
+      const aiResponse = {
+        id: Date.now() + 1,
+        sender: "ai",
+        text: data.reply,
+      };
+
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (err) {
+      console.error("Text chat error:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "ai",
+          text: "Sorry, something went wrong while getting the response.",
+        },
+      ]);
+    } finally {
       setIsAiTyping(false);
-    }, 1500);
+    }
   };
 
-  const handleVoiceRecord = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) setChatInput("Simulated voice input..."); 
+  const handleVoiceRecord = async () => {
+    try {
+      if (isRecording && mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        try {
+          setIsRecording(false);
+          setIsAiTyping(true);
+
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
+
+          const data = await sendAudioToBackend(audioBlob);
+
+          const userMsg = {
+            id: Date.now(),
+            sender: "user",
+            text: data.transcript,
+          };
+
+          const aiMsg = {
+            id: Date.now() + 1,
+            sender: "ai",
+            text: data.reply,
+          };
+
+          setMessages((prev) => [...prev, userMsg, aiMsg]);
+        } catch (err) {
+          console.error("Voice chat error:", err);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              sender: "ai",
+              text: "Sorry, I could not process your voice message.",
+            },
+          ]);
+        } finally {
+          setIsAiTyping(false);
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone error:", err);
+      alert("Microphone access failed.");
+      setIsRecording(false);
+    }
   };
+
+  // =========================================
+  // --- END REAL BACKEND LOGIC ---
+  // =========================================
 
   const handleSearchFriend = (e) => {
     e.preventDefault();
@@ -454,9 +564,7 @@ const NavBar = () => {
               </div>
             </div>
 
-            {/* ========================================= */}
-            {/* --- NEW: YOUR SYNDICATE (FRIENDS) ROW --- */}
-            {/* ========================================= */}
+            {/* --- YOUR SYNDICATE (FRIENDS) ROW --- */}
             <div className="w-full mt-6 md:mt-8 animate-stagger-4 bg-gray-50/50 border border-gray-200 rounded-[2rem] p-5 md:p-8">
               <div className="flex justify-between items-center mb-5">
                 <h4 className="text-lg md:text-xl font-black text-gray-900 flex items-center gap-2">
@@ -466,7 +574,6 @@ const NavBar = () => {
               </div>
               
               <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 custom-scrollbar">
-                {/* Map through the mock friends */}
                 {mockFriends.map((friend, idx) => (
                   <div key={idx} className="flex flex-col items-center gap-2 min-w-[70px] md:min-w-[80px] group cursor-pointer">
                     <div className="size-14 md:size-16 rounded-full border-2 border-transparent group-hover:border-purple-400 shadow-sm overflow-hidden transition-all duration-300 group-hover:scale-110">
@@ -476,7 +583,6 @@ const NavBar = () => {
                   </div>
                 ))}
                 
-                {/* Find More Friends Button inside the row */}
                 <div 
                   onClick={() => {
                     setIsProfileModalOpen(false);
