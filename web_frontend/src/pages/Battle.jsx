@@ -3,13 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 
-const battle= ()=>{
+const Battle= ()=>{
 
 const navigate = useNavigate();
 const { roomId } = useParams();
 const { user } = useContext(AuthContext);
-
-const [opponent, setOpponent] = useState(null);
+const [opponent, setOpponent] = useState({ solved: 0 });
 
 const [dbUser, setDbUser] = useState(null);
 
@@ -242,4 +241,4 @@ useEffect(() => {
   );
 };
 
-export default battle;
+export default Battle;

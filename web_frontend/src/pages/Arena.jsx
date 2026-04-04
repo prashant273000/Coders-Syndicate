@@ -10,7 +10,7 @@ const Arena = () => {
   const [pendingInvite, setPendingInvite] = useState(null);
   const [friends, setFriends] = useState([]);
   const [dbUser, setDbUser] = useState(null);
-
+const [pendingMatchId, setPendingMatchId] = useState(null);
   // --- NEW: INCOMING BATTLE REQUEST STATE ---
   const [incomingBattleRequest, setIncomingBattleRequest] = useState(null);
 
@@ -70,17 +70,51 @@ const Arena = () => {
   }, [dbUser]);
 
   // Simulate finding a match after 3.5 seconds (Quick Match)
+  // useEffect(() => {
+  //   let timeout;
+  //   if (isSearching) {
+  //     timeout = setTimeout(() => {
+  //       setIsSearching(false); 
+  //       // FIXED BUG: 'roomId' was undefined here. Using a placeholder for Quick Match simulation.
+  //       navigate(`/battle/quick-match-123`); 
+  //     }, 3500); 
+  //   }
+  //   return () => clearTimeout(timeout);
+  // }, [isSearching, navigate]);
+
   useEffect(() => {
-    let timeout;
-    if (isSearching) {
-      timeout = setTimeout(() => {
-        setIsSearching(false); 
-        // FIXED BUG: 'roomId' was undefined here. Using a placeholder for Quick Match simulation.
-        navigate(`/battle/quick-match-123`); 
-      }, 3500); 
+  const fetchIncomingBattleInvite = async () => {
+    if (!dbUser?.uid) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/match/invites/${dbUser.uid}`);
+      const data = await res.json();
+
+      if (!res.ok) return;
+
+      if (Array.isArray(data) && data.length > 0) {
+        const invite = data[0];
+
+        setIncomingBattleRequest({
+          id: invite._id || invite.id,
+          roomId: invite.roomId,
+          challengerName: invite.name,
+          challengerPhoto: invite.photoURL,
+          mode: "Friendly Match",
+        });
+      } else {
+        setIncomingBattleRequest(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch incoming battle invite:", err);
     }
-    return () => clearTimeout(timeout);
-  }, [isSearching, navigate]);
+  };
+
+  fetchIncomingBattleInvite();
+  const interval = setInterval(fetchIncomingBattleInvite, 3000);
+
+  return () => clearInterval(interval);
+}, [dbUser]);
 
   // =========================================================================
   // --- SIMULATE INCOMING REQUEST (Replace this with Socket.io later!) ---
@@ -113,53 +147,171 @@ const Arena = () => {
     }
   };
 
+  // const handleSendInvite = async (friend) => {
+  //   try {
+  //     const res = await fetch("http://localhost:5000/api/match/invite-friend", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         senderUid: dbUser.uid,
+  //         friendUid: friend.uid,
+  //       }),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (!res.ok) {
+  //       throw new Error(data.error);
+  //     }
+
+  //     setPendingInvite({
+  //       ...friend,
+  //       roomId: data.roomId,
+  //     });
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.message);
+  //   }
+  // };
   const handleSendInvite = async (friend) => {
+  try {
+    const res = await fetch("http://localhost:5000/api/match/invite-friend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        senderUid: dbUser.uid,
+        friendUid: friend.uid,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to send invite");
+    }
+
+    setPendingInvite({
+      ...friend,
+      roomId: data.roomId,
+    });
+
+    setPendingMatchId(data.matchId);
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
+
+useEffect(() => {
+  if (!pendingMatchId) return;
+
+  const interval = setInterval(async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/match/invite-friend", {
+      const res = await fetch(`http://localhost:5000/api/match/status/${pendingMatchId}`);
+      const data = await res.json();
+
+      if (!res.ok) return;
+
+      if (data.status === "accepted") {
+        clearInterval(interval);
+        setPendingInvite(null);
+        setPendingMatchId(null);
+        setIsInviteModalOpen(false);
+        navigate(`/battle/${data.roomId}`);
+      }
+
+      if (data.status === "declined" || data.status === "cancelled") {
+        clearInterval(interval);
+        setPendingInvite(null);
+        setPendingMatchId(null);
+        alert("Invite was declined or cancelled.");
+      }
+    } catch (err) {
+      console.error("Failed to check invite status:", err);
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, [pendingMatchId, navigate]);
+
+ const handleCloseInviteModal = async () => {
+  try {
+    if (pendingMatchId) {
+      await fetch("http://localhost:5000/api/match/cancel-invite", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          senderUid: dbUser.uid,
-          friendUid: friend.uid,
-        }),
+        body: JSON.stringify({ matchId: pendingMatchId }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error);
-      }
-
-      setPendingInvite({
-        ...friend,
-        roomId: data.roomId,
-      });
-
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
     }
-  };
+  } catch (err) {
+    console.error("Failed to cancel invite:", err);
+  }
 
-  const handleCloseInviteModal = () => {
-    setIsInviteModalOpen(false);
-    setPendingInvite(null); 
-  };
-
+  setIsInviteModalOpen(false);
+  setPendingInvite(null);
+  setPendingMatchId(null);
+};
   // --- NEW: RECEIVER ACCEPT/DECLINE LOGIC ---
-  const handleAcceptBattle = () => {
-    const roomId = incomingBattleRequest.roomId;
-    // Optional: Call your backend to notify sender you accepted
-    setIncomingBattleRequest(null);
-    navigate(`/battle/${roomId}`); 
-  };
+  const handleAcceptBattle = async () => {
+  try {
+    const matchId = incomingBattleRequest.id;
 
-  const handleDeclineBattle = () => {
-    // Optional: Call your backend to notify sender you declined
+    const res = await fetch("http://localhost:5000/api/match/accept-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        matchId,
+        uid: dbUser.uid,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to accept battle");
+    }
+
     setIncomingBattleRequest(null);
-  };
+    navigate(`/battle/${data.roomId}`);
+  } catch (err) {
+    console.error("Accept battle failed:", err);
+    alert(err.message);
+  }
+};
+
+const handleDeclineBattle = async () => {
+  try {
+    const matchId = incomingBattleRequest.id;
+
+    const res = await fetch("http://localhost:5000/api/match/decline-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ matchId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to decline battle");
+    }
+
+    setIncomingBattleRequest(null);
+  } catch (err) {
+    console.error("Decline battle failed:", err);
+    alert(err.message);
+  }
+};
 
   const gameModes = [
     {
