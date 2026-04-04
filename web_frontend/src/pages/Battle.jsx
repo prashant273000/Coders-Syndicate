@@ -51,19 +51,23 @@ const Battle = () => {
   }
 
   // Load random question
+  const fetchQuestion = async () => {
+    try {
+      setLoadingQuestion(true);
+      setTestResults(null);
+      setOutput("");
+      const res = await fetch(`${API_URL}/api/questions/random`);
+      const data = await res.json();
+      setQuestion(data);
+      setCode(data.functionSignature?.[language] || "// write your code here");
+      setLoadingQuestion(false);
+    } catch (err) {
+      console.error("Failed to load question:", err);
+      setLoadingQuestion(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchQuestion = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/questions/random`);
-        const data = await res.json();
-        setQuestion(data);
-        setCode(data.functionSignature?.javascript || "// write your code here");
-        setLoadingQuestion(false);
-      } catch (err) {
-        console.error("Failed to load question:", err);
-        setLoadingQuestion(false);
-      }
-    };
     fetchQuestion();
   }, []);
 
@@ -173,8 +177,14 @@ const Battle = () => {
       if (data.allPassed) {
         const newCount = userSolved + 1;
         setUserSolved(newCount);
-        setOutput("✅ All test cases passed! Problem solved.");
         socketRef.current?.emit("problem_solved", { matchId, uid: user.uid, solvedCount: newCount });
+        if (newCount >= 4) {
+          // Won — solved 4 questions
+          socketRef.current?.emit("end_match", { matchId, winnerId: user.uid });
+        } else {
+          setOutput(`✅ Solved! Loading next question... (${newCount}/4)`);
+          setTimeout(() => fetchQuestion(), 1500);
+        }
       } else {
         const passed = data.results.filter(r => r.passed).length;
         setOutput(`❌ ${passed}/${data.results.length} test cases passed. Keep trying!`);

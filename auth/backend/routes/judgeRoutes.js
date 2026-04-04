@@ -2,41 +2,49 @@ const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
 
-const LANGUAGE_IDS = {
-  javascript: 63,
-  python: 71,
-  cpp: 54,
+const LANGUAGE_MAP = {
+  javascript: { language: "nodejs", versionIndex: "4" },
+  python:     { language: "python3", versionIndex: "4" },
+  cpp:        { language: "cpp17", versionIndex: "1" },
+};
+
+const prepareCode = (code, language) => {
+  if (language === "cpp" && !code.includes("#include")) {
+    return `#include <bits/stdc++.h>\nusing namespace std;\n\n${code}`;
+  }
+  return code;
+};
+
+const jdoodleRequest = async (code, language, input) => {
+  const lang = LANGUAGE_MAP[language] || LANGUAGE_MAP.javascript;
+  code = prepareCode(code, language);
+
+  const response = await fetch("https://api.jdoodle.com/v1/execute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      clientId:     process.env.JDOODLE_CLIENT_ID,
+      clientSecret: process.env.JDOODLE_CLIENT_SECRET,
+      script:       code,
+      language:     lang.language,
+      versionIndex: lang.versionIndex,
+      stdin:        input || "",
+    }),
+  });
+
+  return response.json();
 };
 
 // POST /api/judge/run — run code with custom input
 router.post("/run", verifyToken, async (req, res) => {
   try {
     const { code, language, input } = req.body;
-    const languageId = LANGUAGE_IDS[language] || 63;
-
-    const response = await fetch(
-      "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-RapidAPI-Key": process.env.JUDGE0_API_KEY,
-          "X-RapidAPI-Host": process.env.JUDGE0_API_HOST,
-        },
-        body: JSON.stringify({
-          source_code: code,
-          language_id: languageId,
-          stdin: input,
-        }),
-      }
-    );
-
-    const data = await response.json();
+    const data = await jdoodleRequest(code, language, input);
 
     res.json({
-      output: data.stdout || data.stderr || data.compile_output || "No output",
-      status: data.status?.description || "Unknown",
-      time: data.time,
+      output: data.output || "No output",
+      status: data.statusCode === 200 ? "Accepted" : "Error",
+      time:   data.cpuTime,
       memory: data.memory,
     });
 
@@ -49,33 +57,16 @@ router.post("/run", verifyToken, async (req, res) => {
 router.post("/submit", verifyToken, async (req, res) => {
   try {
     const { code, language, testCases } = req.body;
-    const languageId = LANGUAGE_IDS[language] || 63;
 
     const results = [];
     let allPassed = true;
 
     for (let tc of testCases) {
-      const response = await fetch(
-        "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-RapidAPI-Key": process.env.JUDGE0_API_KEY,
-            "X-RapidAPI-Host": process.env.JUDGE0_API_HOST,
-          },
-          body: JSON.stringify({
-            source_code: code,
-            language_id: languageId,
-            stdin: tc.input,
-          }),
-        }
-      );
+      const data = await jdoodleRequest(code, language, tc.input);
 
-      const data = await response.json();
-      const actualOutput = (data.stdout || "").trim();
+      const actualOutput   = (data.output || "").trim();
       const expectedOutput = tc.expectedOutput.trim();
-      const passed = actualOutput === expectedOutput;
+      const passed         = actualOutput === expectedOutput;
 
       if (!passed) allPassed = false;
 
@@ -84,7 +75,7 @@ router.post("/submit", verifyToken, async (req, res) => {
         expectedOutput,
         actualOutput,
         passed,
-        status: data.status?.description,
+        status: data.statusCode === 200 ? "Accepted" : "Error",
       });
     }
 

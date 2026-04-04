@@ -20,6 +20,11 @@ const handleAuth = async (req, res) => {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        xp: user.xp,
+        level: user.level,
+        tier: user.tier,
+        wins: user.wins,
+        losses: user.losses,
         createdAt: user.createdAt,
       },
     });

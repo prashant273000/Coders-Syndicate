@@ -226,26 +226,22 @@ const NavBar = () => {
         name: dbUser.name,
         email: dbUser.email,
         photoURL: dbUser.picture,
-        rank: "Diamond Tier",       // swap with real DB fields later
-        league: "Champion's League",
-        currentRank: "#1,024",
-        xpEarned: "24,500",
-        docsRead: 142,
-        battlesWon: 87,
-        battlesLost: 12,
+        tier: dbUser.tier || "Bronze",
+        level: dbUser.level || 1,
+        xp: dbUser.xp || 0,
+        wins: dbUser.wins || 0,
+        losses: dbUser.losses || 0,
       }
     : user
     ? {
         name: user.displayName,
         email: user.email,
         photoURL: user.photoURL,
-        rank: "—",
-        league: "—",
-        currentRank: "—",
-        xpEarned: "—",
-        docsRead: 0,
-        battlesWon: 0,
-        battlesLost: 0,
+        tier: "—",
+        level: "—",
+        xp: "—",
+        wins: 0,
+        losses: 0,
       }
     : null;
 
@@ -448,18 +444,18 @@ const NavBar = () => {
                 <div className="flex items-center gap-4 bg-gray-50/80 px-5 py-5 rounded-[1.5rem] border border-gray-200 shadow-sm h-full hover:-translate-y-1 transition-transform">
                   <div className="size-12 md:size-14 flex items-center justify-center bg-[#1a1a1a] rounded-full text-xl shadow-inner shrink-0">🏆</div>
                   <div className="text-left">
-                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Current Standing</p>
-                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.rank}</h4>
-                    <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mt-1.5">{displayUser.league}</p>
+                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Tier</p>
+                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.tier}</h4>
+                    <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mt-1.5">Level {displayUser.level}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 bg-gray-50/80 px-5 py-5 rounded-[1.5rem] border border-gray-200 shadow-sm h-full hover:-translate-y-1 transition-transform">
-                  <div className="size-12 md:size-14 flex items-center justify-center bg-[#1a1a1a] rounded-full text-xl shadow-inner shrink-0">🎯</div>
+                  <div className="size-12 md:size-14 flex items-center justify-center bg-[#1a1a1a] rounded-full text-xl shadow-inner shrink-0">⚔️</div>
                   <div className="text-left">
-                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Global Rank</p>
-                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.currentRank}</h4>
-                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mt-1.5">Top 5%</p>
+                    <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Battles</p>
+                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.wins}W / {displayUser.losses}L</h4>
+                    <p className="text-[10px] font-bold text-green-500 uppercase tracking-wider mt-1.5">Win Rate: {displayUser.wins + displayUser.losses > 0 ? Math.round((displayUser.wins / (displayUser.wins + displayUser.losses)) * 100) : 0}%</p>
                   </div>
                 </div>
 
@@ -467,8 +463,8 @@ const NavBar = () => {
                   <div className="size-12 md:size-14 flex items-center justify-center bg-[#1a1a1a] rounded-full text-xl shadow-inner shrink-0">⚡</div>
                   <div className="text-left">
                     <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total XP</p>
-                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.xpEarned}</h4>
-                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mt-1.5">Level 42</p>
+                    <h4 className="text-lg md:text-xl font-black text-black leading-none">{displayUser.xp}</h4>
+                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mt-1.5">Level {displayUser.level}</p>
                   </div>
                 </div>
               </div>
@@ -476,20 +472,20 @@ const NavBar = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-auto animate-stagger-3">
               <div className="bg-[#1a1a1a] rounded-[2rem] p-8 md:p-10 flex flex-col justify-center items-center text-center shadow-2xl hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 border border-neutral-800">
-                <span className="text-4xl md:text-5xl mb-4 opacity-90">📚</span>
-                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.docsRead}</span>
-                <span className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mt-4">Documentation Read</span>
+                <span className="text-4xl md:text-5xl mb-4 opacity-90">⚡</span>
+                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.xp}</span>
+                <span className="text-xs md:text-sm font-bold text-orange-400 uppercase tracking-widest mt-4">Total XP</span>
               </div>
 
               <div className="bg-[#1a1a1a] rounded-[2rem] p-8 md:p-10 flex flex-col justify-center items-center text-center shadow-2xl hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 border border-neutral-800">
                 <span className="text-4xl md:text-5xl mb-4 opacity-90">⚔️</span>
-                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.battlesWon}</span>
+                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.wins}</span>
                 <span className="text-xs md:text-sm font-bold text-green-400 uppercase tracking-widest mt-4">Battles Won</span>
               </div>
 
               <div className="bg-[#1a1a1a] rounded-[2rem] p-8 md:p-10 flex flex-col justify-center items-center text-center shadow-2xl hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all duration-300 border border-neutral-800">
                 <span className="text-4xl md:text-5xl mb-4 opacity-90">🛡️</span>
-                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.battlesLost}</span>
+                <span className="text-6xl md:text-7xl font-black text-white">{displayUser.losses}</span>
                 <span className="text-xs md:text-sm font-bold text-red-400 uppercase tracking-widest mt-4">Battles Lost</span>
               </div>
             </div>

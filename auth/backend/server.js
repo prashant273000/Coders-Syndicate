@@ -36,6 +36,7 @@ app.use("/api/auth", require("./routes/auth")); //Auth Route
 app.use("/api/match", require("./routes/matchRoutes")); //Match Route
 app.use("/api/questions", require("./routes/questionRoutes"));
 app.use("/api/judge", require("./routes/judgeRoutes"));
+app.use("/api/user", require("./routes/userRoutes"));
 
 const userSockets = {}; // { uid: socketId }
 const matchRooms = {};  // { matchId: [uid1, uid2] }
