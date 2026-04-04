@@ -79,24 +79,40 @@ const ExploreCards = () => {
 
         <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full">
           
-{/* --- UPDATED ARENA CARD --- */}
+          {/* --- UPDATED ARENA CARD --- */}
           <div 
             onClick={() => navigate('/arena')} 
-            className="action-explore-card group w-full md:w-1/2 cursor-pointer"
+            className="relative group flex flex-col justify-center items-center w-full md:w-1/2 h-[140px] md:h-[180px] rounded-[2.5rem] bg-gradient-to-br from-purple-700 via-purple-600 to-pink-500 text-white shadow-[0_10px_30px_rgba(168,85,247,0.4)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(168,85,247,0.6)] hover:scale-105 active:scale-95 overflow-hidden border border-purple-400/50 cursor-pointer"
           >
-            <span className="absolute top-6 right-6 text-white text-2xl opacity-80">⚔️</span>
-            <h4 className="text-white font-black text-3xl md:text-4xl tracking-widest uppercase transition-transform duration-300 group-hover:scale-105">
+            {/* Glassy reflection overlay */}
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            {/* Floating Icon */}
+            <div className="absolute top-5 right-6 md:top-6 md:right-8 text-2xl md:text-3xl opacity-70 group-hover:opacity-100 transition-all duration-500 group-hover:scale-125 group-hover:-rotate-12">
+              ⚔️
+            </div>
+            
+            {/* Text */}
+            <h4 className="text-white font-black text-3xl md:text-4xl tracking-widest uppercase relative z-10 drop-shadow-md">
               Arena
             </h4>
-            
           </div>
-          {/* Documentation Card (Uses Navigate to go to new page) */}
+
+          {/* --- UPDATED DOCUMENTATION CARD --- */}
           <div
             onClick={() => navigate('/documentation')}
-            className="action-explore-card group w-full md:w-1/2 cursor-pointer"
+            className="relative group flex flex-col justify-center items-center w-full md:w-1/2 h-[140px] md:h-[180px] rounded-[2.5rem] bg-gradient-to-br from-indigo-700 via-indigo-600 to-cyan-500 text-white shadow-[0_10px_30px_rgba(79,70,229,0.4)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(79,70,229,0.6)] hover:scale-105 active:scale-95 overflow-hidden border border-indigo-400/50 cursor-pointer"
           >
-            <span className="absolute top-6 right-6 text-white text-2xl opacity-80">📚</span>
-            <h4 className="text-white font-black text-2xl md:text-3xl tracking-widest uppercase transition-transform duration-300 group-hover:scale-105">
+            {/* Glassy reflection overlay */}
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            {/* Floating Icon */}
+            <div className="absolute top-5 right-6 md:top-6 md:right-8 text-2xl md:text-3xl opacity-70 group-hover:opacity-100 transition-all duration-500 group-hover:scale-125 group-hover:rotate-12">
+              📚
+            </div>
+            
+            {/* Text */}
+            <h4 className="text-white font-black text-2xl md:text-3xl tracking-widest uppercase relative z-10 drop-shadow-md">
               Documentation
             </h4>
           </div>

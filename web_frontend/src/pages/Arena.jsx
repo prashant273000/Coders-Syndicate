@@ -54,6 +54,9 @@ const Arena = () => {
       setIsSearching(true);
     } else if (modeId === "friendly") {
       setIsInviteModalOpen(true); // Open the Friends List Modal
+    } else if (modeId === "community") {
+      // Optional: Add routing for your future Community page here
+      console.log("Navigating to Community...");
     }
   };
 
@@ -70,6 +73,7 @@ const Arena = () => {
     setPendingInvite(null); // Cancel the pending invite if closed early
   };
 
+  // --- UPDATED: GAME MODES (Removed Duels/Clans, Added Community) ---
   const gameModes = [
     {
       id: "quick",
@@ -90,19 +94,10 @@ const Arena = () => {
       btnClass: "bg-cyan-500 hover:bg-cyan-600 text-white shadow-md shadow-cyan-500/30",
     },
     {
-      id: "learning-duels",
-      title: "📚 LEARNING DUELS",
-      description: "Pair up to master new concepts and solve challenges together.",
-      btnText: "START DUEL",
-      borderColor: "border-purple-400",
-      glowClass: "group-hover:shadow-[0_15px_40px_rgba(168,85,247,0.25)]",
-      btnClass: "bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/30",
-    },
-    {
-      id: "clans",
-      title: "🐺 CLANS",
-      description: "Form a squad of 4 members to fight rival clans.",
-      btnText: "CREATE CLAN",
+      id: "community",
+      title: "🌍 COMMUNITY",
+      description: "Join the global network. Form squads, share strategies, and engage with rival syndicates.",
+      btnText: "EXPLORE COMMUNITY",
       borderColor: "border-pink-400",
       glowClass: "group-hover:shadow-[0_15px_40px_rgba(236,72,153,0.25)]",
       btnClass: "bg-pink-500 hover:bg-pink-600 text-white shadow-md shadow-pink-500/30",
@@ -159,29 +154,35 @@ const Arena = () => {
 
         <div className="w-full max-w-6xl relative flex items-center justify-center mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 w-full z-10">
-            {gameModes.map((mode, index) => (
-              <div 
-                key={mode.id}
-                className={`group bg-white/70 backdrop-blur-xl border-2 ${mode.borderColor} rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[280px] transition-all duration-300 hover:-translate-y-2 ${mode.glowClass} shadow-sm`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div>
-                  <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 flex items-center gap-3">
-                    {mode.title}
-                  </h3>
-                  <p className="text-gray-600 font-semibold text-base leading-relaxed pr-4">
-                    {mode.description}
-                  </p>
-                </div>
-                
-                <button 
-                  onClick={() => handleModeClick(mode.id)}
-                  className={`mt-8 w-full py-4 text-lg rounded-xl font-black tracking-widest uppercase transition-transform active:scale-95 ${mode.btnClass} cursor-pointer`}
+            {/* --- UPDATED: MAPPING LOGIC FOR WIDE CARD --- */}
+            {gameModes.map((mode, index) => {
+              // The Community card is the 3rd item (index 2)
+              const isWideCard = index === 2;
+
+              return (
+                <div 
+                  key={mode.id}
+                  className={`group bg-white/70 backdrop-blur-xl border-2 ${mode.borderColor} rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[280px] transition-all duration-300 hover:-translate-y-2 ${mode.glowClass} shadow-sm ${isWideCard ? 'md:col-span-2 md:flex-row md:items-center' : ''}`}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  {mode.btnText}
-                </button>
-              </div>
-            ))}
+                  <div className={isWideCard ? 'md:w-2/3' : ''}>
+                    <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 flex items-center gap-3">
+                      {mode.title}
+                    </h3>
+                    <p className="text-gray-600 font-semibold text-base leading-relaxed pr-4">
+                      {mode.description}
+                    </p>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleModeClick(mode.id)}
+                    className={`mt-8 w-full py-4 text-lg rounded-xl font-black tracking-widest uppercase transition-transform active:scale-95 ${mode.btnClass} cursor-pointer ${isWideCard ? 'md:mt-0 md:w-1/3' : ''}`}
+                  >
+                    {mode.btnText}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

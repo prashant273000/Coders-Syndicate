@@ -464,11 +464,16 @@ const handleDeclineRequest = async (requestId) => {
       {/* NAVBAR: FIXED 'relative' CLASS ISSUE HERE */}
       <header className={`navbar ${scrolled ? "scrolled" : "not-scrolled"}`}>
         <div className="inner w-full flex items-center justify-between px-4 md:px-8">
-          <Link to="/" className="logo flex items-center gap-3 transition-transform hover:scale-105 shrink-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-white shadow-md">
+          <Link to="/" className="logo flex items-center gap-3 transition-all hover:scale-105 shrink-0 group">
+            {/* Enhanced Image Wrapper with Hover Effect */}
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-200 group-hover:border-pink-400 flex items-center justify-center bg-white shadow-md transition-colors duration-300">
               <img src="/images/web_logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="hidden lg:inline text-black font-extrabold text-xl md:text-2xl [text-shadow:0_2px_8px_#9333ea] tracking-tight">Coder_Syndicate</span>
+            
+            {/* Heavier, Punchier Gradient Text */}
+            <span className="hidden lg:inline font-black text-2xl md:text-3xl uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-pink-500 to-indigo-600 drop-shadow-md">
+              Coder_Syndicate
+            </span>
           </Link>
 
           <nav className="hidden md:flex items-center">
