@@ -6,128 +6,161 @@ import { AuthContext } from "../context/AuthContext";
 
 const Arena = () => {
   const [isSearching, setIsSearching] = useState(false);
-const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-const [pendingInvite, setPendingInvite] = useState(null);
-const [friends, setFriends] = useState([]);
-const [dbUser, setDbUser] = useState(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [pendingInvite, setPendingInvite] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [dbUser, setDbUser] = useState(null);
 
-const { user } = useContext(AuthContext);
-const navigate = useNavigate();
+  // --- NEW: INCOMING BATTLE REQUEST STATE ---
+  const [incomingBattleRequest, setIncomingBattleRequest] = useState(null);
 
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-useEffect(() => {
-  const fetchUserFromBackend = async () => {
-    if (!user) {
-      setDbUser(null);
-      return;
-    }
-
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch("http://localhost:5000/api/auth", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setDbUser(data.user);
+  useEffect(() => {
+    const fetchUserFromBackend = async () => {
+      if (!user) {
+        setDbUser(null);
+        return;
       }
-    } catch (err) {
-      console.error("Failed to fetch backend user:", err);
-    }
-  };
 
-  fetchUserFromBackend();
-}, [user]);
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("http://localhost:5000/api/auth", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-useEffect(() => {
-  const fetchFriends = async () => {
-    if (!dbUser?.uid) return;
+        const data = await res.json();
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/friends/list/${dbUser.uid}`);
-      const data = await res.json();
-
-      if (res.ok) {
-        const formattedFriends = data.map((friend) => ({
-          ...friend,
-          status: "Online",
-        }));
-        setFriends(formattedFriends);
+        if (res.ok) {
+          setDbUser(data.user);
+        }
+      } catch (err) {
+        console.error("Failed to fetch backend user:", err);
       }
-    } catch (err) {
-      console.error("Failed to fetch friends:", err);
-    }
-  };
+    };
 
-  fetchFriends();
-}, [dbUser]);
+    fetchUserFromBackend();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (!dbUser?.uid) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/friends/list/${dbUser.uid}`);
+        const data = await res.json();
+
+        if (res.ok) {
+          const formattedFriends = data.map((friend) => ({
+            ...friend,
+            status: "Online",
+          }));
+          setFriends(formattedFriends);
+        }
+      } catch (err) {
+        console.error("Failed to fetch friends:", err);
+      }
+    };
+
+    fetchFriends();
+  }, [dbUser]);
 
   // Simulate finding a match after 3.5 seconds (Quick Match)
   useEffect(() => {
     let timeout;
     if (isSearching) {
       timeout = setTimeout(() => {
-        setIsSearching(false); // Close loader
-        navigate(`/battle/${roomId}`);// GO TO BATTLE!
+        setIsSearching(false); 
+        // FIXED BUG: 'roomId' was undefined here. Using a placeholder for Quick Match simulation.
+        navigate(`/battle/quick-match-123`); 
       }, 3500); 
     }
     return () => clearTimeout(timeout);
   }, [isSearching, navigate]);
 
-  
-  // --- UPDATED: HANDLE CLICK FOR DIFFERENT MODES ---
+  // =========================================================================
+  // --- SIMULATE INCOMING REQUEST (Replace this with Socket.io later!) ---
+  // =========================================================================
+  useEffect(() => {
+    // This will pop up a fake request 8 seconds after the page loads for testing
+    const mockIncomingTimer = setTimeout(() => {
+      if (!isInviteModalOpen && !isSearching) {
+        setIncomingBattleRequest({
+          id: "req_998",
+          roomId: "simulated_room_xyz",
+          challengerName: "Prashant Sengar",
+          challengerPhoto: "https://api.dicebear.com/7.x/avataaars/svg?seed=Prashant",
+          mode: "Friendly Match"
+        });
+      }
+    }, 8000); 
+    
+    return () => clearTimeout(mockIncomingTimer);
+  }, [isInviteModalOpen, isSearching]);
+  // =========================================================================
+
   const handleModeClick = (modeId) => {
     if (modeId === "quick") {
       setIsSearching(true);
     } else if (modeId === "friendly") {
-      setIsInviteModalOpen(true); // Open the Friends List Modal
+      setIsInviteModalOpen(true); 
     } else if (modeId === "community") {
-      // Optional: Add routing for your future Community page here
       console.log("Navigating to Community...");
     }
   };
 
- const handleSendInvite = async (friend) => {
-  try {
-    const res = await fetch("http://localhost:5000/api/match/invite-friend", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        senderUid: dbUser.uid,
-        friendUid: friend.uid,
-      }),
-    });
+  const handleSendInvite = async (friend) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/match/invite-friend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          senderUid: dbUser.uid,
+          friendUid: friend.uid,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.error);
+      if (!res.ok) {
+        throw new Error(data.error);
+      }
+
+      setPendingInvite({
+        ...friend,
+        roomId: data.roomId,
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
     }
-
-    setPendingInvite({
-      ...friend,
-      roomId: data.roomId,
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-};
+  };
 
   const handleCloseInviteModal = () => {
     setIsInviteModalOpen(false);
-    setPendingInvite(null); // Cancel the pending invite if closed early
+    setPendingInvite(null); 
   };
 
-  // --- UPDATED: GAME MODES (Removed Duels/Clans, Added Community) ---
+  // --- NEW: RECEIVER ACCEPT/DECLINE LOGIC ---
+  const handleAcceptBattle = () => {
+    const roomId = incomingBattleRequest.roomId;
+    // Optional: Call your backend to notify sender you accepted
+    setIncomingBattleRequest(null);
+    navigate(`/battle/${roomId}`); 
+  };
+
+  const handleDeclineBattle = () => {
+    // Optional: Call your backend to notify sender you declined
+    setIncomingBattleRequest(null);
+  };
+
   const gameModes = [
     {
       id: "quick",
@@ -208,9 +241,7 @@ useEffect(() => {
 
         <div className="w-full max-w-6xl relative flex items-center justify-center mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 w-full z-10">
-            {/* --- UPDATED: MAPPING LOGIC FOR WIDE CARD --- */}
             {gameModes.map((mode, index) => {
-              // The Community card is the 3rd item (index 2)
               const isWideCard = index === 2;
 
               return (
@@ -241,7 +272,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* --- RENDER THE LOADER WITH USER PROPS (Quick Match) --- */}
+      {/* --- MATCHMAKING LOADER --- */}
       {isSearching && (
         <MatchmakingLoader 
           onCancel={() => setIsSearching(false)} 
@@ -250,9 +281,54 @@ useEffect(() => {
         />
       )}
 
-      {/* ========================================= */}
-      {/* --- NEW: INVITE FRIEND MODAL ---          */}
-      {/* ========================================= */}
+      {/* ===================================================== */}
+      {/* --- INCOMING BATTLE REQUEST TOAST (Receiver Side) --- */}
+      {/* ===================================================== */}
+      {incomingBattleRequest && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-sm px-4 animate-slide-down">
+          <div className="bg-white/95 backdrop-blur-xl border-2 border-purple-400 rounded-3xl p-5 shadow-[0_20px_50px_rgba(168,85,247,0.3)]">
+            
+            <div className="flex items-center gap-4 mb-4">
+              {/* Pulsing Avatar */}
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-50"></div>
+                <div className="relative size-14 rounded-full border-2 border-purple-200 overflow-hidden bg-white shadow-sm">
+                  <img src={incomingBattleRequest.challengerPhoto} alt="Challenger" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <h4 className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                  <span>⚔️</span> BATTLE CHALLENGE
+                </h4>
+                <p className="text-gray-900 font-black text-lg leading-tight">
+                  {incomingBattleRequest.challengerName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button 
+                onClick={handleDeclineBattle}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-bold uppercase tracking-widest text-xs hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer"
+              >
+                Decline
+              </button>
+              <button 
+                onClick={handleAcceptBattle}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black uppercase tracking-widest text-xs shadow-md shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+              >
+                Accept
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================== */}
+      {/* --- SEND INVITE MODAL (Sender Side) ---               */}
+      {/* ===================================================== */}
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] p-6 md:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md relative overflow-hidden animate-slide-up">
@@ -272,36 +348,39 @@ useEffect(() => {
             {/* STATE 1: SHOW FRIENDS LIST */}
             {!pendingInvite ? (
               <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-2 relative z-10">
-                {friends.map((friend) => (
-                  <div key={friend.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 bg-white hover:border-purple-200 hover:shadow-md transition-all group">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="size-12 rounded-full overflow-hidden border border-gray-200 bg-gray-50">
-                          <img src={friend.photoURL} alt={friend.name} className="w-full h-full object-cover" />
+                {friends.length === 0 ? (
+                   <p className="text-gray-500 text-center font-medium my-8">No friends found. Add some from the navbar!</p>
+                ) : (
+                  friends.map((friend) => (
+                    <div key={friend.uid || friend.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 bg-white hover:border-purple-200 hover:shadow-md transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="size-12 rounded-full overflow-hidden border border-gray-200 bg-gray-50">
+                            <img src={friend.picture || friend.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} alt={friend.name} className="w-full h-full object-cover" />
+                          </div>
+                          <span className={`absolute bottom-0 right-0 size-3.5 border-2 border-white rounded-full ${
+                            friend.status === "Online" ? "bg-green-400" : friend.status === "In a Battle" ? "bg-yellow-400" : "bg-gray-400"
+                          }`}></span>
                         </div>
-                        {/* Status Dot */}
-                        <span className={`absolute bottom-0 right-0 size-3.5 border-2 border-white rounded-full ${
-                          friend.status === "Online" ? "bg-green-400" : friend.status === "In a Battle" ? "bg-yellow-400" : "bg-gray-400"
-                        }`}></span>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 leading-tight">{friend.name}</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{friend.status}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-900 leading-tight">{friend.name}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{friend.status}</span>
-                      </div>
+                      
+                      <button 
+                        onClick={() => handleSendInvite(friend)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                          friend.status === "Online" 
+                            ? "bg-cyan-500 hover:bg-cyan-400 text-white shadow-md shadow-cyan-500/30 active:scale-95 cursor-pointer" 
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        Invite
+                      </button>
                     </div>
-                    
-                    <button 
-                      onClick={() => handleSendInvite(friend)}
-                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                        friend.status === "Online" 
-                          ? "bg-cyan-500 hover:bg-cyan-400 text-white shadow-md shadow-cyan-500/30 active:scale-95 cursor-pointer" 
-                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      }`}
-                    >
-                      Invite
-                    </button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             ) : (
               
@@ -314,15 +393,13 @@ useEffect(() => {
                   
                   {/* Friend Avatar in center */}
                   <div className="relative z-10 size-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
-                    <img src={pendingInvite.photoURL} alt={pendingInvite.name} className="w-full h-full object-cover" />
+                    <img src={pendingInvite.picture || pendingInvite.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} alt={pendingInvite.name} className="w-full h-full object-cover" />
                   </div>
                 </div>
                 
-                <h3 className="text-xl font-black text-gray-900 mb-1 text-center">
-                  Invited {pendingInvite.name}
-                </h3>
+                <h3 className="text-xl font-black text-gray-900 mb-1 text-center">Invited {pendingInvite.name}</h3>
                 <p className="text-sm font-bold text-cyan-600 uppercase tracking-widest animate-pulse">
-                  Waiting for acceptance...
+                  Awaiting Acceptance...
                 </p>
                 
                 <button 
