@@ -18,6 +18,23 @@ const HomePage = () => (
     <AnimatedBadge />
   </main>
 );
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Documentation from "./pages/Documentation";
+
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        {/* If the URL is exactly "/", load the Home page */}
+        <Route path="/" element={<Home />} />
+        
+        {/* If the URL is "/documentation", load the new Document page */}
+        <Route path="/documentation" element={<Documentation />} />
+      </Routes>
+    </Router>
+  );
+};
 
 const LoginRoute = () => {
   const { user } = useContext(AuthContext);
