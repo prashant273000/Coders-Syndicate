@@ -29,7 +29,7 @@ const NavBar = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   
-  // Refs (From Second Navbar)
+  // Refs
   const chatScrollRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -166,7 +166,7 @@ const NavBar = () => {
   };
 
   // =========================================
-  // --- REAL BACKEND LOGIC (From Second Navbar) ---
+  // --- REAL BACKEND LOGIC ---
   // =========================================
   const sendAudioToBackend = async (audioBlob) => {
     const formData = new FormData();
@@ -461,8 +461,8 @@ const handleDeclineRequest = async (requestId) => {
         </div>
       )}
 
-      {/* NAVBAR */}
-      <header className={`navbar relative ${scrolled ? "scrolled" : "not-scrolled"}`}>
+      {/* NAVBAR: FIXED 'relative' CLASS ISSUE HERE */}
+      <header className={`navbar ${scrolled ? "scrolled" : "not-scrolled"}`}>
         <div className="inner w-full flex items-center justify-between px-4 md:px-8">
           <Link to="/" className="logo flex items-center gap-3 transition-transform hover:scale-105 shrink-0">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-white shadow-md">
