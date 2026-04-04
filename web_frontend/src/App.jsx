@@ -11,6 +11,7 @@ import Layout from "./components/Layout";
 import Documentation from "./pages/Documentation";
 import Home from "./pages/Home";
 import Arena from "./pages/Arena";
+import Leaderboard from "./pages/Leaderboard";
 
 // ---- Pages ----
 const HomePage = () => (
@@ -44,6 +45,7 @@ const App = () => (
         <Route path="/documentation" element={<Documentation />} />
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/arena" element={<Arena />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>
     </BrowserRouter>
   </AuthProvider>
