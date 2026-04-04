@@ -65,7 +65,6 @@ const NavBar = () => {
           <div className="right-actions">
             <div className="hidden md:flex items-center gap-3">
               <button className="action-icon-btn animate-pop chat-btn" aria-label="Chat">💬</button>
-              <button className="action-icon-btn animate-pop theme-btn" aria-label="Theme">🌓</button>
             </div>
 
             {user ? (
