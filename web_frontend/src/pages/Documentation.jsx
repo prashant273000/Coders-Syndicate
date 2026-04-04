@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/NavBar";
-
+import ReactMarkdown from "react-markdown";
+import axios from "axios";
 const Documentation = () => {
   const [topic, setTopic] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
@@ -9,41 +10,53 @@ const Documentation = () => {
   const [curriculum, setCurriculum] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
 
-  const handleRun = () => {
+  const handleRun = async() => {
     if (!topic.trim()) return;
 
     setHasSearched(true);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const mockBackendResponse = [
-        { 
-          id: 1, title: "Introduction & Setup", status: "completed", icon: "🌟", 
-          content: "Welcome to the module! In this section, we will cover the foundational concepts and ensure your local environment is configured properly. You will learn how to install the required dependencies and verify your setup." 
-        },
-        { 
-          id: 2, title: "Core Fundamentals", status: "completed", icon: "🧠", 
-          content: "Now that we are set up, let's dive into the core mechanics. We will explore the primary data structures, how the main loop operates, and the lifecycle of a basic request." 
-        },
-        { 
-          id: 3, title: "Advanced Patterns", status: "active", icon: "🔥", 
-          content: "This is where things get interesting. We are moving beyond the basics to look at design patterns, optimization techniques, and how to structure code for large-scale applications." 
-        },
-        { 
-          id: 4, title: "State Management", status: "locked", icon: "🛠️", 
-          content: "This content is currently locked. Complete the 'Advanced Patterns' section to unlock this module." 
-        },
-        { 
-          id: 5, title: "Backend Integration", status: "locked", icon: "🔌", 
-          content: "This content is currently locked. Progress further in the curriculum to unlock." 
-        },
-      ];
-      
-      setCurriculum(mockBackendResponse);
-      setSelectedNode(mockBackendResponse[0]); 
-      setIsLoading(false);
-    }, 800); 
+   try {
+    const res = await axios.post("http://localhost:5000/api/roadmap", {
+      topic: topic,
+    });
+
+    const data = res.data;
+    setCurriculum(data);
+    setSelectedNode(data[0]);
+    }
+    catch(err){
+      console.error(err);
+    }
+    setIsLoading(false);
   };
+
+  const handleTabClick = async (item) => {
+  setSelectedNode({
+    ...item,
+    content: "Loading..."
+  });
+
+  try {
+    const res = await axios.post("http://localhost:5000/api/content", {
+      title: item.title,
+      topic: topic,
+    });
+
+    setSelectedNode({
+      ...item,
+      content: res.data.content,
+    });
+  } catch (err) {
+    console.error("TAB CLICK ERROR:", err.response?.data || err.message);
+
+    setSelectedNode({
+      ...item,
+      content: "Failed to load content from server.",
+    });
+  }
+};
+
 
   return (
     <main className="relative min-h-screen flex flex-col font-['Mona_Sans',sans-serif] bg-slate-50 text-black">
@@ -144,7 +157,7 @@ const Documentation = () => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setSelectedNode(item)}
+                      onClick={() => handleTabClick(item)}
                       className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl transition-all duration-200 ${
                         isActive 
                           ? "bg-black text-white shadow-md scale-[1.02]" 
@@ -193,7 +206,25 @@ const Documentation = () => {
                   </div>
 
                   <div className="prose prose-lg text-gray-700 font-medium leading-relaxed">
-                    <p>{selectedNode.content}</p>
+                  <div className="prose prose-lg max-w-none text-gray-700">
+                    <ReactMarkdown
+                      components={{
+                        code({ inline, className, children, ...props }) {
+                          return !inline ? (
+                            <pre className="bg-gray-900 text-white p-4 rounded-xl overflow-x-auto">
+                              <code {...props}>{children}</code>
+                            </pre>
+                          ) : (
+                            <code className="bg-gray-200 px-1 py-0.5 rounded">
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
+                      {selectedNode.content}
+                    </ReactMarkdown>
+                  </div>
                     
                     {selectedNode.status !== "locked" && (
                       <div className="mt-10 w-full h-64 bg-gray-900 rounded-2xl flex items-center justify-center border border-gray-700 shadow-inner">
