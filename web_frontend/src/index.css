@@ -135,6 +135,21 @@ html, body, #root {
     /* CHANGED: Upgraded font-bold to font-black for maximum weight, and text-gray-900 for extra contrast */
     @apply text-gray-900 text-[30px] md:text-[30px] font-black tracking-widest uppercase;
   }
+
+/* Interactive Cards (Arena & Docs) */
+  .action-explore-card {
+    /* CHANGED: justify-center and items-center added to perfectly center the big text */
+    @apply relative w-full h-[180px] rounded-3xl bg-[#1a1a1a]/90 backdrop-blur-md flex flex-col justify-center items-center transition-all duration-300 cursor-pointer border border-neutral-700/50 shadow-2xl overflow-hidden;
+  }
+  
+.action-explore-card {
+    /* CHANGED: Height increased from h-[180px] to h-[240px] for taller buttons */
+    @apply relative w-full h-[240px] rounded-3xl bg-[#1a1a1a]/90 backdrop-blur-md flex flex-col justify-center items-center transition-all duration-300 cursor-pointer border border-neutral-700/50 shadow-2xl overflow-hidden;
+  }
+
+  /* Typewriter Cursor */
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .blinking-cursor { animation: blink 1s step-end infinite; }
   
 }
 
@@ -193,6 +208,51 @@ html, body, #root {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* ========================================= */
+/* --- MODAL ANIMATIONS ---                  */
+/* ========================================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(12px); }
+}
+
+@keyframes modalPopUp {
+  0% { transform: scale(0.95) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes fadeInUpStagger {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-modal-pop {
+  /* cubic-bezier creates that beautiful, bouncy "Apple-style" spring effect */
+  animation: modalPopUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered items wait a fraction of a second before animating in */
+.animate-stagger-1 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.animate-stagger-2 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.animate-stagger-3 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
 
 .animate-blink {
   animation: blink 1s step-end infinite;

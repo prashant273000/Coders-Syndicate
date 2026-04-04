@@ -1,13 +1,15 @@
-import Navbar from "./components/NavBar"; // Keep this import
+import Navbar from "./components/NavBar"; 
 import Hero from "./sections/Hero";
 import VideoBG from "./components/VideoBG"; 
-import AnimatedBadge from "./components/AnimatedBadge";
+import AnimatedBadge from "./components/AnimatedBadge"; 
+import ExploreCards from "./sections/ExploreCards"; 
 
 const App = () => (
   <main className="relative">
     <VideoBG /> 
-    <Navbar /> {/* Restored Navbar */}
+    <Navbar /> 
     <Hero />
+    <ExploreCards />
     <AnimatedBadge />
   </main>
 );

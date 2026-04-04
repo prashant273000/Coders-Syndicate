@@ -40,11 +40,11 @@ const Hero = () => {
       Turning concepts into code, and code into impact.
     </p>
 
-    <Button
-      text="Explore"
-      className="w-[200px] md:w-60 h-12 md:h-14 mt-6"
-      id="hero" 
-    />
+<Button
+  text="Explore"
+  className="w-[200px] md:w-60 h-12 md:h-14 mt-6"
+  id="explore-cards" // <-- Update this to match the new section!
+/>
   </div>
 </header>
       </div>
