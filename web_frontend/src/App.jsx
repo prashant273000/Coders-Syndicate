@@ -1,17 +1,19 @@
-import Navbar from "./components/NavBar"; 
-import Hero from "./sections/Hero";
-import VideoBG from "./components/VideoBG"; 
-import AnimatedBadge from "./components/AnimatedBadge"; 
-import ExploreCards from "./sections/ExploreCards"; 
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Documentation from "./pages/Documentation";
 
-const App = () => (
-  <main className="relative">
-    <VideoBG /> 
-    <Navbar /> 
-    <Hero />
-    <ExploreCards />
-    <AnimatedBadge />
-  </main>
-);
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        {/* If the URL is exactly "/", load the Home page */}
+        <Route path="/" element={<Home />} />
+        
+        {/* If the URL is "/documentation", load the new Document page */}
+        <Route path="/documentation" element={<Documentation />} />
+      </Routes>
+    </Router>
+  );
+};
 
 export default App;
