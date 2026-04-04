@@ -1,14 +1,25 @@
-import { useState, useContext } from "react"; 
+import { useState, useContext, useEffect } from "react"; // Add useEffect
+import { useNavigate } from "react-router-dom"; // Add useNavigate
 import Navbar from "../components/NavBar";
 import MatchmakingLoader from "../components/MatchmakingLoader"; 
-// Import your AuthContext (verify this path matches your project structure!)
 import { AuthContext } from "../context/AuthContext";
 
 const Arena = () => {
   const [isSearching, setIsSearching] = useState(false);
-  
-  // Grab the user from Firebase Auth Context
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate(); // Initialize navigate
+
+  // Simulate finding a match after 3.5 seconds
+  useEffect(() => {
+    let timeout;
+    if (isSearching) {
+      timeout = setTimeout(() => {
+        setIsSearching(false); // Close loader
+        navigate("/battle"); // GO TO BATTLE!
+      }, 3500); 
+    }
+    return () => clearTimeout(timeout);
+  }, [isSearching, navigate]);
 
   const handleModeClick = (modeId) => {
     if (modeId === "quick") {
