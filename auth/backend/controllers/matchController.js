@@ -1,64 +1,79 @@
 //Logic of match Rooms
 
-const Match = require("../models/match")
-const User = require("../models/user")
-const { addToQueue, getMatch } = require("../arena/queue")
+const Match = require("../models/match");
+const User = require("../models/user");
 const getLevelFromXP = require("../utils/levels");
 const getTier = require("../utils/tier");
 //Find Match 
 const findMatch = async (req, res) => {
-    try{
-        const uid = req.user.uid;
+  try {
+    const uid = req.user.uid;
 
-        addToQueue(uid);
+    // Check if this user is already in an active match
+    const existingMatch = await Match.findOne({
+      players: uid,
+      status: "active",
+    });
 
-        const players = getMatch(); //Initializes the matchmaking
-       
-        //could not find players any then waiting...
-        if(!players) {
-            return res.json({status: "waiting"});
-        }
-
-        const match = await Match.create({
-            players,
-            status: "active",
-            startedAt: new Date(),
-        });
-
-        res.json({
-            status: "matched",
-            matchId: match._id,
-            players: match.players,
-        });
-    } catch (err) { 
-       //Printing erro messages
-        res.status(500).json({error: err.message});
+    if (existingMatch) {
+      return res.json({
+        status: "matched",
+        matchId: existingMatch._id,
+        players: existingMatch.players,
+      });
     }
+
+    // Check if there's a waiting match to join
+    const waitingMatch = await Match.findOne({ status: "waiting" });
+
+    if (waitingMatch && !waitingMatch.players.includes(uid)) {
+      // Join the waiting match
+      waitingMatch.players.push(uid);
+      waitingMatch.status = "active";
+      waitingMatch.startedAt = new Date();
+      await waitingMatch.save();
+
+      return res.json({
+        status: "matched",
+        matchId: waitingMatch._id,
+        players: waitingMatch.players,
+      });
+    }
+
+    // No waiting match — create one and wait
+    const newMatch = await Match.create({
+      players: [uid],
+      status: "waiting",
+    });
+
+    return res.json({ status: "waiting" });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-//End Mactch
 const endMatch = async (req, res) => {
-    try{
-        const { matchId, winnerId } = req.body;
+  try {
+    const { matchId, winnerId } = req.body;
 
-        const match = await Match.findById(matchId);
+    const match = await Match.findById(matchId);
 
-        if(!match) {
-            return res.status(404).json({ error: "Match not the found"});
-        }
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
 
-        match.status = "completed";
-        match.winner = winnerId;
-        match.endedAt = new Date();
+    match.status = "completed";
+    match.winner = winnerId;
+    match.endedAt = new Date();
+    await match.save();
 
-        //Save Matches
-        await match.save();
-         for (let player of match.players) {
-        const user = await User.findOne({ uid: player });
-
+    // Update player stats
+    for (let playerUid of match.players) {
+      const user = await User.findOne({ uid: playerUid });
       if (!user) continue;
 
-      if (player === winnerId) {
+      if (playerUid === winnerId) {
         user.wins += 1;
         user.xp += 100;
       } else {
@@ -68,7 +83,6 @@ const endMatch = async (req, res) => {
 
       user.level = getLevelFromXP(user.xp);
       user.tier = getTier(user.level);
-
       await user.save();
     }
 
@@ -79,3 +93,4 @@ const endMatch = async (req, res) => {
 };
 
 module.exports = { findMatch, endMatch };
+
