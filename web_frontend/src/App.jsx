@@ -10,6 +10,7 @@ import ExploreCards from "./sections/ExploreCards";
 import Layout from "./components/Layout";
 import Documentation from "./pages/Documentation";
 import Home from "./pages/Home";
+import Battle from "./pages/Battle";
 import Arena from "./pages/Arena";
 import Leaderboard from "./pages/Leaderboard";
 
@@ -46,6 +47,7 @@ const App = () => (
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/arena" element={<Arena />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/battle" element={<Battle />} />
       </Routes>
     </BrowserRouter>
   </AuthProvider>

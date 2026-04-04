@@ -20,8 +20,7 @@ const NavBar = () => {
   const chatScrollRef = useRef(null);
 
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "Got questions? I'm here to clarify... ask about specific sections or concepts!" },
-    { id: 2, sender: "user", text: "Explain the \"Advanced Patterns\" section... it's making me a bit confused!" }
+    { id: 1, sender: "ai", text: "Got questions? I'm here to clarify... ask about specific sections or concepts!" }
   ]);
 
   // Get the Firebase user from context
