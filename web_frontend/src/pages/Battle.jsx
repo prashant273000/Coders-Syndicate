@@ -1,17 +1,17 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
-const Battle = () => {
-  const navigate = useNavigate(); 
-  const { user } = useContext(AuthContext);
 
-  // Mock Opponent Data
-  const opponent = {
-    name: "AlexChen_99",
-    photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex", 
-    solved: 8
-  };
+const battle= ()=>{
+
+const navigate = useNavigate();
+const { roomId } = useParams();
+const { user } = useContext(AuthContext);
+
+const [opponent, setOpponent] = useState(null);
+
+const [dbUser, setDbUser] = useState(null);
 
   const [userSolved, setUserSolved] = useState(0);
   const [timeLeft, setTimeLeft] = useState(15 * 60); 
@@ -19,6 +19,54 @@ const Battle = () => {
   const [customInput, setCustomInput] = useState("");
   const [output, setOutput] = useState("");
 
+  useEffect(() => {
+  const fetchUserFromBackend = async () => {
+    if (!user) {
+      setDbUser(null);
+      return;
+    }
+
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("http://localhost:5000/api/auth", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setDbUser(data.user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch backend user:", err);
+    }
+  };
+
+  fetchUserFromBackend();
+}, [user]);
+
+useEffect(() => {
+  const fetchMatch = async () => {
+    const res = await fetch(`http://localhost:5000/api/match/room/${roomId}`);
+    const data = await res.json();
+
+    if (res.ok) {
+      const opp = data.players.find(p => p.uid !== user.uid);
+
+      setOpponent({
+        name: opp.name,
+        photoURL: opp.picture,
+        solved: 0
+      });
+    }
+  };
+
+  fetchMatch();
+}, [roomId]);
+  
   // Timer countdown effect
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
@@ -95,11 +143,11 @@ const Battle = () => {
           {/* TOP RIGHT: Opponent */}
           <div className="flex items-center gap-3 justify-end">
             <div className="flex flex-col text-right hidden sm:flex">
-              <span className="text-gray-900 font-black text-lg leading-tight truncate max-w-[150px]">{opponent.name}</span>
+              <span className="text-gray-900 font-black text-lg leading-tight truncate max-w-[150px]">{opponent?.name || "Loading..."}</span>
               <span className="text-xs font-bold text-pink-500 uppercase tracking-widest mt-0.5">Solved: {opponent.solved}</span>
             </div>
             <div className="size-12 md:size-14 rounded-full bg-white border-2 border-pink-200 overflow-hidden flex items-center justify-center shadow-md shrink-0">
-              <img src={opponent.photoURL} alt="Opponent" className="w-full h-full object-cover" />
+              <img src={opponent?.photoURL || ""} alt="Opponent" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
@@ -194,4 +242,4 @@ const Battle = () => {
   );
 };
 
-export default Battle;
+export default battle;
