@@ -20,6 +20,7 @@ const NavBar = () => {
         setDbUser(null);
         return;
       }
+      if (dbUser && dbUser.uid === user.uid) return;
 
       try {
         const token = await user.getIdToken();
