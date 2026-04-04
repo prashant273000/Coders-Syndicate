@@ -10,47 +10,57 @@ const docs = {
 console.log("GEMINI KEY EXISTS:", !!process.env.GEMINI_API_KEY);
 async function generateContent(title, topic) {
   const prompt = `
-You are a technical teacher.
+Act as an expert technical teacher creating clean, highly structured coding documentation.
 
-Explain "${title}" from ${topic} in a clean, beginner-friendly, well-structured Markdown format.
+Explain "${title}" in the context of ${topic} in a beginner-friendly way.
 
-Rules:
-- Use proper Markdown headings like ## and ###
-- Use bullet points where useful
-- Add a short "What it means" section
-- Add a "Why it matters" section
-- Add a "Key points" bullet list
-- Add an "Example" section
-- If relevant, include a code block using triple backticks
-- Keep it neat, readable, and visually structured
-- Do not write everything in one paragraph
--leave lines between blocks or two different things
--Structured like step by step learning 
+You MUST strictly follow the exact Markdown formatting, spacing, and styling shown below.
 
+Formatting Rules:
+- Use a book emoji 📘 and bold text for the main title.
+- Use a blue diamond 🔹 and numbers for section headings (use bold text, NOT markdown headers).
+- Use horizontal rules (---) to separate sections.
+- Use bold text for key terms in the introduction.
+- Use bullet points using * symbol.
+- Use inline code formatting with backticks and → for explanations.
+- Always include a properly formatted code block with syntax highlighting.
+- Keep spacing clean and readable.
+- Do NOT add extra sections outside this format.
 
-Format exactly like this:
+STRICT TEMPLATE TO FOLLOW:
 
-## ${title}
+*📘 ${title} (Quick Guide) *
 
-### What it means
-...
+🔹 1. What is ${title}? **
+[1-2 short sentences explaining what it is. Bold the most important keywords.]
+It supports/features:
+* [Feature 1]
+* [Feature 2]
+* [Feature 3]**
 
-### Why it matters
-...
+---
 
-### Key points
-- point 1
-- point 2
-- point 3
+*🔹 2. Basic Structure of ${title} *
 
-### Example
 \`\`\`cpp
-// example here
+// Write clean, simple, beginner-friendly example code related to ${title}
 \`\`\`
 
-### Summary
-...
+Explanation:
+* \`code part\` → explanation
+* \`code part\` → explanation
+* \`code part\` → explanation
+* \`code part\` → explanation
 
+---
+
+*🔹 3. Key Points of ${title} *
+* Important concept 1
+* Important concept 2
+* Important concept 3
+* Common mistake or tip
+
+Make sure the explanation is clear, beginner-friendly, and visually structured.
 `;
 
   const response = await axios.post(
@@ -138,7 +148,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
-
+app.use("/api/voice", require("./routes/voice"));
 // Test route (optional)
 app.get("/", (req, res) => {
   res.send("Backend running ✅");

@@ -18,6 +18,9 @@ const NavBar = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const chatScrollRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
 
   const [messages, setMessages] = useState([
     { id: 1, sender: "ai", text: "Got questions? I'm here to clarify... ask about specific sections or concepts!" },
@@ -70,6 +73,24 @@ const NavBar = () => {
     }
   }, [messages, isAiTyping]);
 
+  const sendAudioToBackend = async (audioBlob) => {
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "recording.webm");
+
+  const res = await fetch("http://localhost:5000/api/voice/ask", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Voice request failed");
+  }
+
+  return data;
+};
+
   const handleLogout = async () => {
     await logout();
     setDbUser(null);
@@ -79,30 +100,126 @@ const NavBar = () => {
   // =========================================
   // --- MISSING CHATBOT FUNCTIONS ADDED BACK ---
   // =========================================
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  const handleSendMessage = async (e) => {
+  e.preventDefault();
+  if (!chatInput.trim()) return;
 
-    const newUserMsg = { id: Date.now(), sender: "user", text: chatInput };
-    setMessages((prev) => [...prev, newUserMsg]);
-    setChatInput("");
-    setIsAiTyping(true);
+  const userMessage = chatInput.trim();
 
-    setTimeout(() => {
-      const aiResponse = { id: Date.now() + 1, sender: "ai", text: "Advanced Patterns involve higher-level architecture like State Management and Custom Hooks. Let's break it down step-by-step!" };
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsAiTyping(false);
-    }, 1500);
+  const newUserMsg = {
+    id: Date.now(),
+    sender: "user",
+    text: userMessage,
   };
 
-  const handleVoiceRecord = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setChatInput("Simulated voice input..."); 
-    } else {
-      setIsRecording(true);
+  setMessages((prev) => [...prev, newUserMsg]);
+  setChatInput("");
+  setIsAiTyping(true);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/voice/text", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Text chat failed");
     }
-  };
+
+    const aiResponse = {
+      id: Date.now() + 1,
+      sender: "ai",
+      text: data.reply,
+    };
+
+    setMessages((prev) => [...prev, aiResponse]);
+  } catch (err) {
+    console.error("Text chat error:", err);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 1,
+        sender: "ai",
+        text: "Sorry, something went wrong while getting the response.",
+      },
+    ]);
+  } finally {
+    setIsAiTyping(false);
+  }
+};
+
+ const handleVoiceRecord = async () => {
+  try {
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+
+    audioChunksRef.current = [];
+    mediaRecorderRef.current = mediaRecorder;
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      try {
+        setIsRecording(false);
+        setIsAiTyping(true);
+
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
+        });
+
+        const data = await sendAudioToBackend(audioBlob);
+
+        const userMsg = {
+          id: Date.now(),
+          sender: "user",
+          text: data.transcript,
+        };
+
+        const aiMsg = {
+          id: Date.now() + 1,
+          sender: "ai",
+          text: data.reply,
+        };
+
+        setMessages((prev) => [...prev, userMsg, aiMsg]);
+      } catch (err) {
+        console.error("Voice chat error:", err);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            sender: "ai",
+            text: "Sorry, I could not process your voice message.",
+          },
+        ]);
+      } finally {
+        setIsAiTyping(false);
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+
+    mediaRecorder.start();
+    setIsRecording(true);
+  } catch (err) {
+    console.error("Microphone error:", err);
+    alert("Microphone access failed.");
+    setIsRecording(false);
+  }
+};
 
   // Use real data from MongoDB, fall back to Firebase data if DB hasn't responded yet
   const displayUser = dbUser
