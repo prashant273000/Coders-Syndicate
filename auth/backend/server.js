@@ -7,6 +7,76 @@ const cheerio = require("cheerio");
 const docs = {
     "opengl" : "https://learnopengl.com/"
 }
+console.log("GEMINI KEY EXISTS:", !!process.env.GEMINI_API_KEY);
+async function generateContent(title, topic) {
+  const prompt = `
+You are a technical teacher.
+
+Explain "${title}" from ${topic} in a clean, beginner-friendly, well-structured Markdown format.
+
+Rules:
+- Use proper Markdown headings like ## and ###
+- Use bullet points where useful
+- Add a short "What it means" section
+- Add a "Why it matters" section
+- Add a "Key points" bullet list
+- Add an "Example" section
+- If relevant, include a code block using triple backticks
+- Keep it neat, readable, and visually structured
+- Do not write everything in one paragraph
+-leave lines between blocks or two different things
+-Structured like step by step learning 
+
+
+Format exactly like this:
+
+## ${title}
+
+### What it means
+...
+
+### Why it matters
+...
+
+### Key points
+- point 1
+- point 2
+- point 3
+
+### Example
+\`\`\`cpp
+// example here
+\`\`\`
+
+### Summary
+...
+
+`;
+
+  const response = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ]
+    },
+    {
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+  const text = response?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("No text returned from Gemini");
+  }
+
+  return text;
+}
 async function crawl(input) {
     try {
         const res = await axios.get(docs[input]);
@@ -83,6 +153,26 @@ app.post("/api/roadmap",async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 
+});
+app.post("/api/content", async (req, res) => {
+  try {
+    const { title, topic } = req.body;
+
+    console.log("TITLE:", title);
+    console.log("TOPIC:", topic);
+
+    const content = await generateContent(title, topic);
+
+    res.json({ content });
+  } catch (error) {
+    console.error("CONTENT API ERROR:");
+    console.error(error.response?.data || error.message || error);
+
+    res.status(500).json({
+      error: "Failed to generate content",
+      details: error.response?.data || error.message,
+    });
+  }
 });
 // Start server
 const PORT = 5000;
