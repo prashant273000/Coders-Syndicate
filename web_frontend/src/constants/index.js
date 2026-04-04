@@ -14,6 +14,7 @@ const navLinks = [
     name: "Help",
     link: "#help",
   },
+  { name: "Leaderboard", link: "/leaderboard" },
 ];
 
 /**
