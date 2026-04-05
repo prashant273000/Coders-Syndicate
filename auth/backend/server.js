@@ -151,6 +151,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/voice", require("./routes/voice"));
 app.use("/api/friends", require("./routes/friends"));
 app.use("/api/match", require("./routes/match"));
+app.use("/api/leaderboard", require("./routes/leaderboard"));
 // Test route (optional)
 app.get("/", (req, res) => {
   res.send("Backend running ✅");

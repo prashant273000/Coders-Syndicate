@@ -1,27 +1,59 @@
-import { useState } from "react";
+import { getAuth } from "firebase/auth";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import Navbar from "../components/NavBar";
 
 const Leaderboard = () => {
-  // Mocking the EXACT user data from your NavBar
-  const currentUser = {
-    name: "Hacker",
-    rank: "Diamond Tier",
-    league: "Champion's League",
-    currentRank: 1024,
-    xpEarned: "24,500",
-    photoURL: null 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [topPlayers, setTopPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  const fetchLeaderboardData = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        console.log("User not logged in");
+        return;
+      }
+
+      const loggedInUid = user.uid;
+
+      const [leaderboardRes, currentUserRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/leaderboard"),
+        axios.get(`http://localhost:5000/api/leaderboard/user/${loggedInUid}`)
+      ]);
+
+      setTopPlayers(leaderboardRes.data);
+      setCurrentUser(currentUserRes.data);
+
+    } catch (error) {
+      console.error("LEADERBOARD FETCH ERROR:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Mock data for the top players on the leaderboard
-  const topPlayers = [
-    { rank: 1, name: "AlexChen_99", league: "Grandmaster", tier: "Apex Tier", xp: "142,000", isUser: false },
-    { rank: 2, name: "SarahDev", league: "Grandmaster", tier: "Apex Tier", xp: "138,500", isUser: false },
-    { rank: 3, name: "CodeNinja", league: "Grandmaster", tier: "Apex Tier", xp: "135,200", isUser: false },
-    { rank: 4, name: "ByteKing", league: "Champion's League", tier: "Diamond Tier", xp: "98,400", isUser: false },
-    { rank: 5, name: "LogicPro", league: "Champion's League", tier: "Diamond Tier", xp: "96,100", isUser: false },
-    { rank: 6, name: "ReactMaster", league: "Champion's League", tier: "Platinum Tier", xp: "82,000", isUser: false },
-    { rank: 7, name: "BugSquasher", league: "Champion's League", tier: "Platinum Tier", xp: "79,500", isUser: false },
-  ];
+  fetchLeaderboardData();
+}, []);
+
+    if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-xl font-bold text-gray-600">Loading leaderboard...</p>
+      </main>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-xl font-bold text-red-500">Failed to load leaderboard.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen w-full flex flex-col font-['Mona_Sans',sans-serif] bg-slate-50 overflow-hidden relative">
@@ -69,8 +101,8 @@ const Leaderboard = () => {
           {/* Left: Profile Pic & Name */}
           <div className="flex items-center gap-5 w-full md:w-auto justify-center md:justify-start">
             <div className="size-16 md:size-20 rounded-full bg-black flex items-center justify-center text-3xl font-black text-white shadow-lg border-4 border-white shrink-0">
-              {currentUser.photoURL ? (
-                <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover rounded-full" />
+              {currentUser.picture ? (
+                <img src={currentUser.picture} alt="Profile" className="w-full h-full object-cover rounded-full" />
               ) : (
                 currentUser.name.charAt(0).toUpperCase()
               )}
@@ -78,7 +110,7 @@ const Leaderboard = () => {
             <div className="text-center md:text-left">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Your Standing</p>
               <h2 className="text-2xl font-black text-gray-900 leading-none">{currentUser.name}</h2>
-              <p className="text-sm font-bold text-purple-600 mt-1">Rank #{currentUser.currentRank}</p>
+              <p className="text-sm font-bold text-purple-600 mt-1">Rank #{currentUser.rank}</p>
             </div>
           </div>
 
@@ -90,7 +122,7 @@ const Leaderboard = () => {
             <div className="size-12 rounded-full bg-indigo-50 flex items-center justify-center text-2xl shadow-inner border border-indigo-100">🏆</div>
             <div className="text-center md:text-left">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Tier</p>
-              <h3 className="text-lg font-black text-gray-900 leading-none">{currentUser.rank}</h3>
+              <h3 className="text-lg font-black text-gray-900 leading-none">{currentUser.tier}</h3>
             </div>
           </div>
 
@@ -114,7 +146,7 @@ const Leaderboard = () => {
             <div className="size-12 rounded-full bg-orange-50 flex items-center justify-center text-2xl shadow-inner border border-orange-100">⚡</div>
             <div className="text-center md:text-left">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total XP</p>
-              <h3 className="text-lg font-black text-orange-600 leading-none">{currentUser.xpEarned}</h3>
+              <h3 className="text-lg font-black text-orange-600 leading-none">{currentUser.xp.toLocaleString()}</h3>
             </div>
           </div>
 
@@ -166,7 +198,7 @@ const Leaderboard = () => {
 
                 {/* XP */}
                 <div className="font-black text-purple-600 text-right text-lg">
-                  {player.xp}
+                  {player.xp.toLocaleString()}
                 </div>
               </div>
             ))}
@@ -185,7 +217,7 @@ const Leaderboard = () => {
               <div className="flex items-center gap-2">
                 <span className="md:hidden text-xs font-bold text-indigo-300 uppercase">Rank: </span>
                 <div className="size-8 rounded-full flex items-center justify-center font-black text-sm bg-indigo-500 text-white border border-indigo-400">
-                  #{currentUser.currentRank}
+                  #{currentUser.rank}
                 </div>
               </div>
               <div className="font-black text-white truncate text-lg flex items-center gap-2">
@@ -193,10 +225,10 @@ const Leaderboard = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-white text-sm">{currentUser.league}</span>
-                <span className="text-xs font-bold text-indigo-200">{currentUser.rank}</span>
+                <span className="text-xs font-bold text-indigo-200">{currentUser.tier}</span>
               </div>
               <div className="font-black text-yellow-300 text-right text-lg">
-                {currentUser.xpEarned}
+                {currentUser.xp.toLocaleString()}
               </div>
             </div>
 
