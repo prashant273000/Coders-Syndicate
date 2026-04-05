@@ -44,16 +44,16 @@ const App = () => (
   <AuthProvider>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/documentation" element={<Documentation />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-        <Route path="/arena" element={<Arena />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/battle" element={<Battle />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/help" element={<Help />} />
-      </Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginRoute />} />
+      <Route path="/documentation" element={<Documentation />} />
+      <Route path="/arena" element={<Arena />} />
+      <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/battle/:roomId" element={<Battle />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/help" element={<Help />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
     </BrowserRouter>
   </AuthProvider>
 );

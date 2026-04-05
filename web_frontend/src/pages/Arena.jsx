@@ -281,13 +281,13 @@ useEffect(() => {
     }
 
     setIncomingBattleRequest(null);
+    console.log("Navigating to battle room:", data.roomId);
     navigate(`/battle/${data.roomId}`);
   } catch (err) {
     console.error("Accept battle failed:", err);
     alert(err.message);
   }
 };
-
 const handleDeclineBattle = async () => {
   try {
     const matchId = incomingBattleRequest.id;
