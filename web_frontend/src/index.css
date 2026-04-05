@@ -1,0 +1,292 @@
+@import url("https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap");
+@import "tailwindcss";
+
+/* Update the top of your index.css to this: */
+html, body, #root {
+  width: 100dvw;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: transparent; /* Changed from white to transparent */
+  color: #1a1a1a;
+  scroll-behavior: smooth;
+  font-family: "Mona Sans", sans-serif;
+}
+
+
+.video-background {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; 
+  height: 100vh;
+  object-fit: cover;
+  z-index: -10; /* Set to -10 just to be safe */
+  pointer-events: none;
+}
+
+/* --- index.css --- */
+
+@layer components {
+/* --- Navbar Styles --- */
+  .navbar {
+    @apply fixed w-full top-0 left-0 py-5 px-6 md:px-12 z-[100] transition-all duration-300;
+    &.scrolled { @apply bg-white/80 backdrop-blur-md border-b border-black/5; }
+    &.not-scrolled { @apply bg-transparent; }
+    
+    /* CHANGED: Removed max-w-7xl and added w-full to push to boundaries */
+    .inner { @apply w-full mx-auto flex items-center justify-between; }
+    .logo { @apply flex items-center gap-3 text-black text-xl md:text-2xl font-extrabold; }
+  }
+
+  /* --- Top-Right Actions --- */
+  .right-actions {
+    @apply flex items-center gap-2 md:gap-5;
+  }
+
+  /* Base Icon Button Styles */
+  .action-icon-btn {
+    @apply size-10 md:size-12 rounded-full bg-black/5 border border-black/10 flex justify-center items-center 
+           text-lg md:text-xl text-black hover:bg-black/10 transition-all duration-300 origin-center;
+  }
+
+  /* 💬 Chatbot Hover: Wiggle Effect */
+  .chat-btn:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    animation: wiggle 0.4s ease-in-out infinite alternate;
+  }
+
+  /* 🌓 Theme Hover: Rotate Effect */
+  .theme-btn:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: rotate(45deg) scale(1.1);
+  }
+
+  /* Login Button Base Style */
+  .login-text {
+    @apply text-black font-bold text-sm md:text-base hover:text-black/70 transition-colors pb-1;
+  }
+
+/* --- Profile Circular Avatar --- */
+  .profile-avatar-btn {
+    @apply size-10 md:size-11 rounded-full bg-black flex justify-center items-center overflow-hidden cursor-pointer transition-all duration-300;
+    
+    /* Subtle hover lift effect */
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+  }
+
+  /* --- New: Mobile Menu Styles --- */
+  .mobile-menu {
+    @apply absolute top-full left-0 w-full bg-white border-b border-black/10 flex flex-col p-5 gap-4 shadow-xl;
+    a { @apply text-lg font-semibold text-black hover:text-black/70; }
+  }
+
+  /* Simple Pop-in Animation for icons */
+  .animate-pop {
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* ======================================================= */
+  /* KEEP YOUR HERO, SLIDER, AND BUTTON STYLES BELOW THIS LINE */
+  /* ======================================================= */
+  .hero-layout { @apply relative z-10 md:h-dvh h-[80vh] flex xl:items-center items-start justify-center; }
+  /* ... rest of your code ... */
+  .hero-text {
+    @apply flex flex-col justify-center md:text-[60px] text-[30px] font-semibold relative z-10 text-black;
+    img { @apply size-8 md:size-10 object-contain; }
+    .slide { @apply absolute pt-0 px-2 md:px-5 py-[30px] h-[48px] md:h-[78px] overflow-hidden; }
+  }
+
+  /* --- Button Animation Styles (Unchanged) --- */
+  .cta-wrapper { @apply relative z-20 cursor-pointer; }
+  .cta-button {
+    @apply px-4 py-4 rounded-lg bg-[#1a1a1a] flex justify-center items-center relative overflow-hidden;
+    .bg-circle {
+      @apply absolute -right-10 origin-center top-1/2 -translate-y-1/2 
+        w-[120%] h-[120%] group-hover:size-10 group-hover:right-10
+        rounded-full bg-white/20 transition-all duration-500;
+    }
+    .text {
+      @apply uppercase md:text-lg text-white transition-all duration-500
+        group-hover:-translate-x-5 xl:translate-x-0 -translate-x-5;
+    }
+    .arrow-wrapper {
+      @apply group-hover:bg-white/10 size-10 rounded-full absolute right-10 top-1/2 
+        -translate-y-1/2 flex justify-center items-center overflow-hidden;
+      img { @apply size-5 xl:-translate-y-32 translate-y-0 animate-bounce group-hover:translate-y-0 transition-all duration-500; filter: invert(1); }
+    }
+  }
+  
+/* --- Watermark Cover Badge --- */
+  .watermark-cover {
+    /* CHANGED: Reduced bottom and right spacing (bottom-1 / bottom-2) to push it deeper into the corner */
+    @apply fixed bottom-1 right-1 md:bottom-2 md:right-2 z-[60];
+    
+    @apply bg-white/20 backdrop-blur-2xl border border-white/50 shadow-lg;
+    @apply rounded-xl flex items-center px-6;
+    
+    height: 52px;
+    min-width: 250px; 
+    justify-content: flex-start; 
+  }
+
+  .typewriter-text {
+    /* CHANGED: Upgraded font-bold to font-black for maximum weight, and text-gray-900 for extra contrast */
+    @apply text-gray-900 text-[30px] md:text-[30px] font-black tracking-widest uppercase;
+  }
+
+/* Interactive Cards (Arena & Docs) */
+  .action-explore-card {
+    /* CHANGED: justify-center and items-center added to perfectly center the big text */
+    @apply relative w-full h-[180px] rounded-3xl bg-[#1a1a1a]/90 backdrop-blur-md flex flex-col justify-center items-center transition-all duration-300 cursor-pointer border border-neutral-700/50 shadow-2xl overflow-hidden;
+  }
+  
+.action-explore-card {
+    /* CHANGED: Height increased from h-[180px] to h-[240px] for taller buttons */
+    @apply relative w-full h-[240px] rounded-3xl bg-[#1a1a1a]/90 backdrop-blur-md flex flex-col justify-center items-center transition-all duration-300 cursor-pointer border border-neutral-700/50 shadow-2xl overflow-hidden;
+  }
+
+  /* Typewriter Cursor */
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .blinking-cursor { animation: blink 1s step-end infinite; }
+  
+}
+
+
+
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Hero & Slider Styles --- */
+  .hero-layout { 
+    @apply relative z-10 min-h-dvh flex items-center justify-start; 
+  }
+  
+  .hero-text {
+    @apply flex flex-col font-bold text-black relative z-10;
+    /* Responsive font sizing */
+    h1 { @apply text-[40px] md:text-[70px] lg:text-[80px]; }
+    h6 { @apply text-[35px] md:text-[60px] lg:text-[70px] leading-tight; }
+  }
+
+  /* Slider specific fixes */
+  .slide { 
+    display: inline-block;
+    overflow: hidden;
+  }
+  
+  .wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    animation: wordSlider 16s infinite cubic-bezier(0.8, 0, 0.2, 1); 
+  }
+
+/* Adjusted animation percentages to match 8 items */
+@keyframes wordSlider {
+  0%, 9%      { transform: translateY(0); }
+  12.5%, 21.5%  { transform: translateY(-12.5%); }
+  25%, 34%      { transform: translateY(-25%); }
+  37.5%, 46.5%  { transform: translateY(-37.5%); }
+  50%, 59%      { transform: translateY(-50%); }
+  62.5%, 71.5%  { transform: translateY(-62.5%); }
+  75%, 84%      { transform: translateY(-75%); }
+  87.5%, 96.5%  { transform: translateY(-87.5%); }
+  100%          { transform: translateY(-100%); }
+}
+
+@keyframes wiggle {
+  0% { transform: rotate(0deg) scale(1.1); }
+  33% { transform: rotate(-10deg) scale(1.1); }
+  66% { transform: rotate(10deg) scale(1.1); }
+  100% { transform: rotate(0deg) scale(1.1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ========================================= */
+/* --- BACKGROUND ORB ANIMATIONS ---         */
+/* ========================================= */
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(50px, -50px) scale(1.1); }
+  66% { transform: translate(-40px, 40px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  /* Increased duration to 10s for a smoother, lava-lamp feel */
+  animation: blob 10s infinite alternate ease-in-out;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* ========================================= */
+/* --- MODAL ANIMATIONS ---                  */
+/* ========================================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(12px); }
+}
+
+@keyframes modalPopUp {
+  0% { transform: scale(0.95) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes fadeInUpStagger {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-modal-pop {
+  /* cubic-bezier creates that beautiful, bouncy "Apple-style" spring effect */
+  animation: modalPopUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered items wait a fraction of a second before animating in */
+.animate-stagger-1 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.animate-stagger-2 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.animate-stagger-3 {
+  opacity: 0;
+  animation: fadeInUpStagger 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+  @apply ml-1 font-light opacity-60;
+}
