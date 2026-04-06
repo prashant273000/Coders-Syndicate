@@ -20,6 +20,7 @@ exports.searchUsers = async (req, res) => {
 
     res.json(users);
   } catch (err) {
+    console.error("Search users error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -39,14 +40,16 @@ exports.sendRequest = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const alreadyFriend = sender.friends.some(
-      (id) => id.toString() === receiver._id.toString()
+    // Check if already friends using MongoDB ObjectIds
+    const isAlreadyFriend = sender.friends.some(
+      (friendId) => friendId.toString() === receiver._id.toString()
     );
 
-    if (alreadyFriend) {
+    if (isAlreadyFriend) {
       return res.status(400).json({ error: "Already friends" });
     }
 
+    // Check if pending request already exists
     const existing = await FriendRequest.findOne({
       sender: sender._id,
       receiver: receiver._id,
@@ -57,6 +60,7 @@ exports.sendRequest = async (req, res) => {
       return res.status(400).json({ error: "Request already sent" });
     }
 
+    // Check if reverse pending request exists
     const reverse = await FriendRequest.findOne({
       sender: receiver._id,
       receiver: sender._id,
@@ -67,6 +71,7 @@ exports.sendRequest = async (req, res) => {
       return res.status(400).json({ error: "This user already sent you a request" });
     }
 
+    // Create friend request
     const request = await FriendRequest.create({
       sender: sender._id,
       receiver: receiver._id,
@@ -74,6 +79,7 @@ exports.sendRequest = async (req, res) => {
 
     res.json({ message: "Friend request sent", request });
   } catch (err) {
+    console.error("Send request error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -104,6 +110,7 @@ exports.getRequests = async (req, res) => {
 
     res.json(formatted);
   } catch (err) {
+    console.error("Get requests error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -120,6 +127,7 @@ exports.acceptRequest = async (req, res) => {
     request.status = "accepted";
     await request.save();
 
+    // Add to both users' friends arrays
     await User.findByIdAndUpdate(request.sender, {
       $addToSet: { friends: request.receiver },
     });
@@ -130,6 +138,7 @@ exports.acceptRequest = async (req, res) => {
 
     res.json({ message: "Friend request accepted" });
   } catch (err) {
+    console.error("Accept request error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -148,6 +157,7 @@ exports.declineRequest = async (req, res) => {
 
     res.json({ message: "Friend request declined" });
   } catch (err) {
+    console.error("Decline request error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -161,15 +171,20 @@ exports.getFriendsList = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const friends = user.friends.map((f) => ({
-      id: f._id,
-      uid: f.uid,
-      name: f.name,
-      photoURL: f.picture,
-    }));
+    // Filter out any null/undefined friends and format
+    const friends = user.friends
+      .filter(f => f != null)
+      .map((f) => ({
+        id: f._id,
+        uid: f.uid,
+        name: f.name,
+        picture: f.picture,
+        photoURL: f.picture, // Add both field names for compatibility
+      }));
 
     res.json(friends);
   } catch (err) {
+    console.error("Get friends list error:", err);
     res.status(500).json({ error: err.message });
   }
 };

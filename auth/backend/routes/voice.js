@@ -2,151 +2,124 @@ const express = require("express");
 const multer = require("multer");
 const FormData = require("form-data");
 const axios = require("axios");
+const { getRagService } = require("../services/ragService");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-async function generateChatReply(userMessage) {
-  const prompt = `
-You are a helpful chatbot inside a documentation-learning website.
-
-Rules:
-- Reply in simple, beginner-friendly language
-- Keep the answer short to medium length
-- If the question is technical, explain step by step
-- Do not use Markdown headings
-- Sound natural and helpful
-
-User message: "${userMessage}"
-`;
-
-  const models = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash"
-  ];
-
-  let lastError;
-
-  for (const model of models) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const response = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-          {
-            contents: [
-              {
-                parts: [{ text: prompt }]
-              }
-            ]
-          },
-          {
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        const text = response?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!text) {
-          throw new Error("No text returned from Gemini");
-        }
-
-        return text;
-      } catch (error) {
-        lastError = error;
-
-        const status = error?.response?.status;
-
-        // Retry only for temporary overload/server issues
-        if (status === 503 || status === 429 || status >= 500) {
-          const delay = attempt * 1500;
-          console.log(`Gemini retry ${attempt} for model ${model} after ${delay}ms`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-
-        throw error;
-      }
-    }
-  }
-
-  throw lastError;
-}
-
-router.post("/ask", upload.single("audio"), async (req, res) => {
+/**
+ * POST /api/voice/text — Text chat with XSyndicate
+ * Uses RAG service for context-aware responses
+ */
+router.post("/text", async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Audio file is required" });
+    const { message, history = [] } = req.body;
+
+    console.log('💬 XSyndicate text chat request:', message?.substring(0, 50));
+
+    if (!message || !message.trim()) {
+      return res.json({ reply: "Please send a message!" });
     }
 
-    const form = new FormData();
-    form.append("model_id", "scribe_v2");
-    form.append("file", req.file.buffer, {
-      filename: req.file.originalname || "recording.webm",
-      contentType: req.file.mimetype,
-    });
+    const ragService = getRagService();
 
-    const transcriptResponse = await axios.post(
-      "https://api.elevenlabs.io/v1/speech-to-text",
-      form,
-      {
-        headers: {
-          "xi-api-key": process.env.ELEVENLABS_API_KEY,
-          ...form.getHeaders(),
-        },
-      }
-    );
-
-    const transcript = transcriptResponse?.data?.text;
-
-    if (!transcript) {
-      return res.status(500).json({ error: "No transcript returned from ElevenLabs" });
+    // Check if RAG service is initialized
+    if (!ragService.geminiModel) {
+      console.error('❌ Gemini model not initialized');
+      return res.json({ 
+        reply: "I'm still initializing. Please check that GEMINI_API_KEY is set correctly in your .env file and restart the server.",
+        error: "Model not initialized"
+      });
     }
 
-    const reply = await generateChatReply(transcript);
+    // Use RAG service to generate response with context
+    const result = await ragService.generateChatResponse(message, history);
 
-    res.json({
-      transcript,
-      reply,
+    console.log('✅ XSyndicate response generated, contextUsed:', result.contextUsed);
+
+    res.json({ 
+      reply: result.reply,
+      sources: result.sources || [],
+      contextUsed: result.contextUsed || false,
+      fallback: result.fallback || false
     });
-  } catch (error) {
-    console.error("VOICE ASK ERROR:");
-    console.error(error.response?.data || error.message || error);
 
-    res.status(500).json({
-      error: "Failed to process voice input",
-      details: error.response?.data || error.message,
+  } catch (err) {
+    console.error('❌ Voice text route error:', err.message);
+    res.json({ 
+      reply: "I encountered an error processing your request. Please try again.",
+      error: err.message
     });
   }
 });
 
-router.post("/text", async (req, res) => {
+/**
+ * POST /api/voice/ask — Voice input with ElevenLabs transcription
+ */
+router.post("/ask", upload.single("audio"), async (req, res) => {
   try {
-    const { message } = req.body;
+    console.log('🎙️ Voice ask request received');
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({ error: "Message is required" });
+    if (!req.file) {
+      return res.json({
+        transcript: "",
+        reply: "No audio file received. Please try again."
+      });
     }
 
-    const reply = await generateChatReply(message);
+    const ragService = getRagService();
 
-    res.json({ reply });
-  } catch (error) {
-    console.error("TEXT CHAT ERROR:");
-    console.error(error.response?.data || error.message || error);
-
-    const status = error?.response?.status;
-
-if (status === 503) {
-  return res.status(503).json({
-    error: "AI service is busy right now. Please try again in a few seconds.",
-  });
+    if (!ragService.geminiModel) {
+      return res.json({
+        transcript: "",
+        reply: "Voice service not initialized. Check GEMINI_API_KEY."
+      });
     }
 
-    res.status(500).json({
-    error: "Failed to process text message",
-    details: error.response?.data || error.message,
+    // Transcribe audio using ElevenLabs
+    let transcript = "";
+    try {
+      const form = new FormData();
+      form.append("model_id", "scribe_v2");
+      form.append("file", req.file.buffer, {
+        filename: req.file.originalname || "recording.webm",
+        contentType: req.file.mimetype,
+      });
+
+      const transcriptResponse = await axios.post(
+        "https://api.elevenlabs.io/v1/speech-to-text",
+        form,
+        {
+          headers: {
+            "xi-api-key": process.env.ELEVENLABS_API_KEY,
+            ...form.getHeaders(),
+          },
+        }
+      );
+
+      transcript = transcriptResponse?.data?.text || "";
+      console.log('🎤 Transcribed:', transcript?.substring(0, 50));
+    } catch (transcribeErr) {
+      console.error('⚠️ Transcription failed:', transcribeErr.message);
+      transcript = "Voice message received (transcription unavailable)";
+    }
+
+    // Generate response using RAG service
+    const result = await ragService.generateChatResponse(transcript, []);
+
+    res.json({
+      transcript: transcript,
+      reply: result.reply,
+      sources: result.sources || [],
+      contextUsed: result.contextUsed || false
+    });
+
+  } catch (err) {
+    console.error('❌ Voice ask route error:', err.message);
+    res.json({
+      transcript: "",
+      reply: "Voice processing encountered an error. Please type your message instead.",
+      error: err.message
     });
   }
 });

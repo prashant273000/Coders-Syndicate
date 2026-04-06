@@ -1,9 +1,16 @@
 const { v4: uuidv4 } = require("uuid");
 const BattleRoom = require("../models/BattleRoom");
+const User = require("../models/user");
 const { questions } = require("../data/questions");
 
 // Matchmaking queue: [{ userId, username, photoURL, socketId }]
 let matchmakingQueue = [];
+
+// Active timers for each room: { roomId: timerInterval }
+const activeTimers = new Map();
+
+// Track player scores (solved count) per room
+const roomScores = new Map(); // { roomId: { player1Solved: 0, player2Solved: 0 } }
 
 module.exports = function attachBattleSocket(io) {
   io.on("connection", (socket) => {
@@ -135,6 +142,11 @@ module.exports = function attachBattleSocket(io) {
 
         console.log(`🏠 ${userId} joined room ${roomId}`);
 
+        // Initialize room scores if not exists
+        if (!roomScores.has(roomId)) {
+          roomScores.set(roomId, { player1Solved: 0, player2Solved: 0 });
+        }
+
         // Notify opponent that player joined
         socket.to(roomId).emit("opponentJoined", { userId });
 
@@ -144,7 +156,14 @@ module.exports = function attachBattleSocket(io) {
             socket.emit("roomState", {
               submissions: room.submissions,
               status: room.status,
+              scores: roomScores.get(roomId),
             });
+
+            // Start timer if both players are in the room
+            const playersInRoom = io.sockets.adapter.rooms.get(roomId);
+            if (playersInRoom && playersInRoom.size === 2 && !activeTimers.has(roomId)) {
+              startBattleTimer(io, roomId, room);
+            }
           }
         });
       } catch (error) {
@@ -183,6 +202,19 @@ module.exports = function attachBattleSocket(io) {
           testResults,
         });
 
+        // Update player's solved count if all tests passed
+        const allTestsPassed = testResults && testResults.every(t => t.passed);
+        const scores = roomScores.get(roomId);
+        
+        if (allTestsPassed && scores) {
+          if (userId === room.player1.userId) {
+            scores.player1Solved = (scores.player1Solved || 0) + 1;
+          } else if (userId === room.player2.userId) {
+            scores.player2Solved = (scores.player2Solved || 0) + 1;
+          }
+          roomScores.set(roomId, scores);
+        }
+
         // Check if both players have submitted
         const player1Submissions = room.submissions.filter((s) => s.userId === room.player1.userId);
         const player2Submissions = room.submissions.filter((s) => s.userId === room.player2.userId);
@@ -200,6 +232,7 @@ module.exports = function attachBattleSocket(io) {
           player2BestScore,
           player1Name: room.player1.username,
           player2Name: room.player2.username,
+          scores: scores,
         });
 
         // If both have submitted at least once, determine winner
@@ -223,6 +256,9 @@ module.exports = function attachBattleSocket(io) {
 
           await room.save();
 
+          // Update user stats
+          await updateUserStatsAfterBattle(room);
+
           // Broadcast battle over
           io.to(roomId).emit("battleOver", {
             winnerId,
@@ -231,7 +267,14 @@ module.exports = function attachBattleSocket(io) {
             isDraw: winnerId === null,
             player1Name: room.player1.username,
             player2Name: room.player2.username,
+            reason: "both_submitted",
           });
+
+          // Clean up timer
+          if (activeTimers.has(roomId)) {
+            clearInterval(activeTimers.get(roomId));
+            activeTimers.delete(roomId);
+          }
 
           console.log(`🏆 Battle ${roomId} finished! Winner: ${winnerId || "Draw"}`);
         }
@@ -239,6 +282,125 @@ module.exports = function attachBattleSocket(io) {
         await room.save();
       } catch (error) {
         console.error("submitResult error:", error);
+      }
+    });
+
+    // Player quit - opponent wins immediately
+    socket.on("playerQuit", async (data) => {
+      try {
+        const { roomId, userId, reason } = data;
+        if (!roomId || !userId) return;
+
+        console.log(`🏳️ Player ${userId} quit room ${roomId}`);
+
+        const room = await BattleRoom.findOne({ roomId });
+        if (!room || room.status !== "ongoing") return;
+
+        // Determine winner (the other player)
+        const quitterId = userId;
+        const winnerId = room.player1.userId === quitterId ? room.player2.userId : room.player1.userId;
+
+        room.status = "finished";
+        room.endedAt = new Date();
+        room.winnerId = winnerId;
+
+        // Get current scores
+        const scores = roomScores.get(roomId) || { player1Solved: 0, player2Solved: 0 };
+        room.winnerScore = winnerId === room.player1.userId ? scores.player1Solved : scores.player2Solved;
+        room.loserScore = winnerId === room.player1.userId ? scores.player2Solved : scores.player1Solved;
+
+        await room.save();
+
+        // Update user stats
+        await updateUserStatsAfterBattle(room, winnerId, quitterId);
+
+        // Clean up timer
+        if (activeTimers.has(roomId)) {
+          clearInterval(activeTimers.get(roomId));
+          activeTimers.delete(roomId);
+        }
+
+        // Broadcast battle over to both players
+        io.to(roomId).emit("battleOver", {
+          winnerId,
+          loserId: quitterId,
+          winnerScore: room.winnerScore,
+          loserScore: room.loserScore,
+          isDraw: false,
+          player1Name: room.player1.username,
+          player2Name: room.player2.username,
+          reason: "opponent_quit",
+          quitReason: reason || "surrendered",
+        });
+
+        console.log(`🏆 Battle ${roomId} finished! ${winnerId} wins because ${quitterId} quit.`);
+      } catch (error) {
+        console.error("playerQuit error:", error);
+      }
+    });
+
+    // Timer ended - compare scores
+    socket.on("timerEnded", async (data) => {
+      try {
+        const { roomId } = data;
+        if (!roomId) return;
+
+        console.log(`⏰ Timer ended for room ${roomId}`);
+
+        const room = await BattleRoom.findOne({ roomId });
+        if (!room || room.status !== "ongoing") return;
+
+        // Get final scores
+        const scores = roomScores.get(roomId) || { player1Solved: 0, player2Solved: 0 };
+        
+        room.status = "finished";
+        room.endedAt = new Date();
+
+        let winnerId;
+        if (scores.player1Solved > scores.player2Solved) {
+          winnerId = room.player1.userId;
+          room.winnerId = winnerId;
+          room.winnerScore = scores.player1Solved;
+          room.loserScore = scores.player2Solved;
+        } else if (scores.player2Solved > scores.player1Solved) {
+          winnerId = room.player2.userId;
+          room.winnerId = winnerId;
+          room.winnerScore = scores.player2Solved;
+          room.loserScore = scores.player1Solved;
+        } else {
+          // Draw
+          winnerId = "draw";
+          room.winnerId = "draw";
+          room.winnerScore = scores.player1Solved;
+          room.loserScore = scores.player2Solved;
+        }
+
+        await room.save();
+
+        // Update user stats
+        await updateUserStatsAfterBattle(room, winnerId === "draw" ? null : winnerId, null);
+
+        // Clean up timer
+        if (activeTimers.has(roomId)) {
+          clearInterval(activeTimers.get(roomId));
+          activeTimers.delete(roomId);
+        }
+
+        // Broadcast battle over
+        io.to(roomId).emit("battleOver", {
+          winnerId: winnerId === "draw" ? null : winnerId,
+          winnerScore: room.winnerScore,
+          loserScore: room.loserScore,
+          isDraw: winnerId === "draw",
+          player1Name: room.player1.username,
+          player2Name: room.player2.username,
+          reason: "time_expired",
+          finalScores: scores,
+        });
+
+        console.log(`🏆 Battle ${roomId} finished! Winner: ${winnerId === "draw" ? "Draw" : winnerId}`);
+      } catch (error) {
+        console.error("timerEnded error:", error);
       }
     });
 
@@ -253,8 +415,12 @@ module.exports = function attachBattleSocket(io) {
           matchmakingQueue = matchmakingQueue.filter((u) => u.userId !== userId);
         }
 
-        // Notify room if in a battle
+        // If in a battle, treat disconnect as quit
         if (currentRoom) {
+          // Emit playerQuit event to handle disconnect as surrender
+          socket.emit("playerQuit", { roomId: currentRoom, userId, reason: "disconnected" });
+          
+          // Also notify the room
           socket.to(currentRoom).emit("opponentDisconnected", { userId });
         }
 
@@ -265,3 +431,94 @@ module.exports = function attachBattleSocket(io) {
     });
   });
 };
+
+// Start battle timer (15 minutes)
+function startBattleTimer(io, roomId, room) {
+  const BATTLE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
+  const TICK_INTERVAL = 1000; // Update every second
+
+  const startTime = Date.now();
+  const endTime = startTime + BATTLE_DURATION;
+
+  // Send initial time
+  io.to(roomId).emit("timerUpdate", {
+    roomId,
+    timeRemaining: BATTLE_DURATION,
+    startTime,
+    endTime,
+  });
+
+  const timerInterval = setInterval(() => {
+    const now = Date.now();
+    const timeRemaining = Math.max(0, endTime - now);
+
+    // Broadcast time update
+    io.to(roomId).emit("timerUpdate", {
+      roomId,
+      timeRemaining,
+      startTime,
+      endTime,
+    });
+
+    if (timeRemaining <= 0) {
+      // Timer ended - trigger score comparison
+      io.emit("timerEnded", { roomId });
+      clearInterval(timerInterval);
+      activeTimers.delete(roomId);
+    }
+  }, TICK_INTERVAL);
+
+  activeTimers.set(roomId, timerInterval);
+  console.log(`⏱️ Timer started for room ${roomId}`);
+}
+
+// Update user stats after battle
+async function updateUserStatsAfterBattle(room, winnerId, loserId) {
+  try {
+    const xpWin = 100;
+    const xpLoss = 25;
+
+    if (winnerId) {
+      // Update winner
+      await User.findOneAndUpdate(
+        { uid: winnerId },
+        {
+          $inc: { xpEarned: xpWin, battlesWon: 1 },
+          $set: { tier: calculateTier(room.player1.userId === winnerId ? room.winnerScore : room.winnerScore) }
+        }
+      );
+
+      // Update loser
+      if (loserId) {
+        await User.findOneAndUpdate(
+          { uid: loserId },
+          {
+            $inc: { xpEarned: xpLoss, battlesLost: 1 },
+          }
+        );
+      }
+    } else {
+      // Draw - both get moderate XP
+      await User.findOneAndUpdate(
+        { uid: room.player1.userId },
+        { $inc: { xpEarned: 50 } }
+      );
+      await User.findOneAndUpdate(
+        { uid: room.player2.userId },
+        { $inc: { xpEarned: 50 } }
+      );
+    }
+  } catch (error) {
+    console.error("updateUserStatsAfterBattle error:", error);
+  }
+}
+
+// Calculate tier based on wins (simplified)
+function calculateTier(wins) {
+  if (wins >= 50) return "Apex Tier";
+  if (wins >= 30) return "Diamond Tier";
+  if (wins >= 20) return "Platinum Tier";
+  if (wins >= 10) return "Gold Tier";
+  if (wins >= 5) return "Silver Tier";
+  return "Bronze Tier";
+}

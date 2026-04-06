@@ -1,8 +1,9 @@
-import { useState, useContext, useEffect } from "react"; 
+import { useState, useContext, useEffect, useRef } from "react"; 
 import { useNavigate } from "react-router-dom"; 
 import Navbar from "../components/NavBar";
 import MatchmakingLoader from "../components/MatchmakingLoader"; 
 import { AuthContext } from "../context/AuthContext";
+import { io } from 'socket.io-client';
 
 const Arena = () => {
   const [isSearching, setIsSearching] = useState(false);
@@ -16,6 +17,7 @@ const Arena = () => {
 
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const fetchUserFromBackend = async () => {
@@ -48,39 +50,97 @@ const Arena = () => {
 
   useEffect(() => {
     const fetchFriends = async () => {
-      if (!dbUser?.uid) return;
+      if (!dbUser?.uid) {
+        console.log('No dbUser uid available for fetching friends');
+        return;
+      }
 
       try {
+        console.log('Fetching friends for user:', dbUser.uid);
         const res = await fetch(`http://localhost:5000/api/friends/list/${dbUser.uid}`);
         const data = await res.json();
 
-        if (res.ok) {
+        console.log('Friends API response:', res.status, data);
+
+        if (res.ok && Array.isArray(data)) {
           const formattedFriends = data.map((friend) => ({
             ...friend,
             status: "Online",
           }));
           setFriends(formattedFriends);
+          console.log('Friends loaded:', formattedFriends.length);
+        } else {
+          console.warn('Friends API returned non-ok status or non-array data:', data);
+          setFriends([]);
         }
       } catch (err) {
         console.error("Failed to fetch friends:", err);
+        setFriends([]);
       }
     };
 
     fetchFriends();
   }, [dbUser]);
 
-  // Simulate finding a match after 3.5 seconds (Quick Match)
+  // Real socket matchmaking
   useEffect(() => {
-    let timeout;
-    if (isSearching) {
-      timeout = setTimeout(() => {
-        setIsSearching(false); 
-        // FIXED BUG: 'roomId' was undefined here. Using a placeholder for Quick Match simulation.
-        navigate(`/battle/quick-match-123`); 
-      }, 3500); 
+    if (isSearching && user) {
+      // Connect to socket server
+      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+        transports: ['websocket', 'polling']
+      });
+      socketRef.current = socket;
+
+      // Join matchmaking queue
+      socket.emit('joinQueue', {
+        userId: user.uid,
+        username: user.displayName || user.email || 'Player',
+        photoURL: user.photoURL || ''
+      });
+
+      // When match is found
+      socket.on('matchFound', (data) => {
+        setIsSearching(false);
+        socket.disconnect();
+        socketRef.current = null;
+
+        // Save match data to sessionStorage
+        sessionStorage.setItem('battleRoomId', data.roomId);
+        sessionStorage.setItem('battleOpponent', JSON.stringify({
+          name: data.opponent.username,
+          photo: data.opponent.photoURL,
+          userId: data.opponent.userId
+        }));
+        sessionStorage.setItem('battleQuestion', JSON.stringify(data.question));
+
+        // Navigate to battle
+        navigate(`/battle/${data.roomId}`);
+      });
+
+      // Handle errors
+      socket.on('error', (data) => {
+        console.error('Socket error:', data.message);
+        setIsSearching(false);
+        socket.disconnect();
+        socketRef.current = null;
+      });
+
+      // Handle connection error
+      socket.on('connect_error', (err) => {
+        console.error('Connection error:', err.message);
+        setIsSearching(false);
+        socket.disconnect();
+        socketRef.current = null;
+      });
     }
-    return () => clearTimeout(timeout);
-  }, [isSearching, navigate]);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [isSearching, user, navigate]);
 
   // =========================================================================
   // --- SIMULATE INCOMING REQUEST (Replace this with Socket.io later!) ---
@@ -179,15 +239,6 @@ const Arena = () => {
       borderColor: "border-cyan-400",
       glowClass: "group-hover:shadow-[0_15px_40px_rgba(34,211,238,0.25)]",
       btnClass: "bg-cyan-500 hover:bg-cyan-600 text-white shadow-md shadow-cyan-500/30",
-    },
-    {
-      id: "community",
-      title: "🌍 COMMUNITY",
-      description: "Join the global network. Form squads, share strategies, and engage with rival syndicates.",
-      btnText: "EXPLORE COMMUNITY",
-      borderColor: "border-pink-400",
-      glowClass: "group-hover:shadow-[0_15px_40px_rgba(236,72,153,0.25)]",
-      btnClass: "bg-pink-500 hover:bg-pink-600 text-white shadow-md shadow-pink-500/30",
     }
   ];
 
@@ -240,34 +291,30 @@ const Arena = () => {
         </div>
 
         <div className="w-full max-w-6xl relative flex items-center justify-center mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 w-full z-10">
-            {gameModes.map((mode, index) => {
-              const isWideCard = index === 2;
-
-              return (
-                <div 
-                  key={mode.id}
-                  className={`group bg-white/70 backdrop-blur-xl border-2 ${mode.borderColor} rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[280px] transition-all duration-300 hover:-translate-y-2 ${mode.glowClass} shadow-sm ${isWideCard ? 'md:col-span-2 md:flex-row md:items-center' : ''}`}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className={isWideCard ? 'md:w-2/3' : ''}>
-                    <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 flex items-center gap-3">
-                      {mode.title}
-                    </h3>
-                    <p className="text-gray-600 font-semibold text-base leading-relaxed pr-4">
-                      {mode.description}
-                    </p>
-                  </div>
-                  
-                  <button 
-                    onClick={() => handleModeClick(mode.id)}
-                    className={`mt-8 w-full py-4 text-lg rounded-xl font-black tracking-widest uppercase transition-transform active:scale-95 ${mode.btnClass} cursor-pointer ${isWideCard ? 'md:mt-0 md:w-1/3' : ''}`}
-                  >
-                    {mode.btnText}
-                  </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 w-full max-w-4xl z-10">
+            {gameModes.map((mode, index) => (
+              <div 
+                key={mode.id}
+                className={`group bg-white/70 backdrop-blur-xl border-2 ${mode.borderColor} rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[280px] transition-all duration-300 hover:-translate-y-2 ${mode.glowClass} shadow-sm`}
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div>
+                  <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-4 flex items-center gap-3">
+                    {mode.title}
+                  </h3>
+                  <p className="text-gray-600 font-semibold text-base leading-relaxed pr-4">
+                    {mode.description}
+                  </p>
                 </div>
-              );
-            })}
+                
+                <button 
+                  onClick={() => handleModeClick(mode.id)}
+                  className={`mt-8 w-full py-4 text-lg rounded-xl font-black tracking-widest uppercase transition-transform active:scale-95 ${mode.btnClass} cursor-pointer`}
+                >
+                  {mode.btnText}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -275,7 +322,14 @@ const Arena = () => {
       {/* --- MATCHMAKING LOADER --- */}
       {isSearching && (
         <MatchmakingLoader 
-          onCancel={() => setIsSearching(false)} 
+          onCancel={() => {
+            if (socketRef.current) {
+              socketRef.current.emit('leaveQueue', { userId: user.uid });
+              socketRef.current.disconnect();
+              socketRef.current = null;
+            }
+            setIsSearching(false);
+          }} 
           userPhoto={user?.photoURL}
           userName={user?.displayName || user?.email || "Player"}
         />

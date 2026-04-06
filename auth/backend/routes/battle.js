@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const { questions, languageIds, languageNames } = require("../data/questions");
 const BattleRoom = require("../models/BattleRoom");
 
 // JDoodle API configuration
@@ -14,13 +13,13 @@ console.log("🔑 JDoodle API configured:", JDOODLE_CLIENT_ID ? "Yes" : "No - Pl
 // Language mapping for JDoodle API
 const getJDoodleLanguage = (language) => {
   const mapping = {
-    "javascript": { language: "nodejs", versionIndex: "4" },
     "python": { language: "python3", versionIndex: "3" },
-    "cpp": { language: "cpp17", versionIndex: "0" },
+    "javascript": { language: "nodejs", versionIndex: "4" },
+    "c++": { language: "cpp17", versionIndex: "0" },
     "java": { language: "java", versionIndex: "4" },
     "c": { language: "c", versionIndex: "5" },
   };
-  return mapping[language.toLowerCase()] || mapping["javascript"];
+  return mapping[language.toLowerCase()] || mapping["python"];
 };
 
 // Execute code via JDoodle API
@@ -70,10 +69,10 @@ const executeCode = async (code, language, stdin = "") => {
   }
 };
 
-// Run code against JDoodle (for custom input testing)
+// Run code via JDoodle (for custom input testing)
 router.post("/run", async (req, res) => {
   try {
-    const { code, language, versionIndex, stdin } = req.body;
+    const { code, language, stdin } = req.body;
 
     if (!code || !language) {
       return res.status(400).json({ error: "Code and language are required" });
@@ -110,7 +109,7 @@ router.post("/run", async (req, res) => {
 // Submit code for scoring (runs against all test cases)
 router.post("/submit", async (req, res) => {
   try {
-    const { roomId, userId, code, language, versionIndex } = req.body;
+    const { roomId, userId, code, language } = req.body;
 
     if (!roomId || !userId || !code || !language) {
       return res.status(400).json({ error: "roomId, userId, code, and language are required" });
@@ -133,7 +132,7 @@ router.post("/submit", async (req, res) => {
       return res.status(403).json({ error: "Not a participant in this battle" });
     }
 
-    const testCases = room.question.testCases;
+    const testCases = room.question?.testCases;
     if (!testCases || testCases.length === 0) {
       return res.status(400).json({ error: "No test cases available" });
     }
@@ -199,6 +198,25 @@ router.post("/submit", async (req, res) => {
 
     console.log(`✅ Submission complete: ${verdict}, score=${score}%, passed=${passedCount}/${testCases.length}`);
 
+    // Save submission to database
+    room.submissions.push({
+      userId,
+      code,
+      language,
+      languageId: 0, // Not used with JDoodle
+      verdict,
+      score,
+      testResults,
+      submittedAt: new Date()
+    });
+
+    // Check if both players have submitted
+    const player1Submissions = room.submissions.filter((s) => s.userId === room.player1.userId);
+    const player2Submissions = room.submissions.filter((s) => s.userId === room.player2.userId);
+
+    const player1BestScore = player1Submissions.length > 0 ? Math.max(...player1Submissions.map((s) => s.score)) : 0;
+    const player2BestScore = player2Submissions.length > 0 ? Math.max(...player2Submissions.map((s) => s.score)) : 0;
+
     // Emit submitResult to socket (for real-time updates)
     const io = req.app.get("io");
     if (io) {
@@ -207,10 +225,47 @@ router.post("/submit", async (req, res) => {
         userId,
         code,
         language,
+        languageId: 0,
         verdict,
         score,
         testResults,
       });
+    }
+
+    // If both have submitted at least once, determine winner
+    if (player1Submissions.length > 0 && player2Submissions.length > 0) {
+      const winnerId = player1BestScore > player2BestScore ? room.player1.userId : 
+                      player2BestScore > player1BestScore ? room.player2.userId : null;
+
+      room.status = "finished";
+      room.endedAt = new Date();
+
+      if (winnerId) {
+        room.winnerId = winnerId;
+        room.winnerScore = Math.max(player1BestScore, player2BestScore);
+        room.loserScore = Math.min(player1BestScore, player2BestScore);
+      } else {
+        // Draw
+        room.winnerId = "draw";
+        room.winnerScore = player1BestScore;
+        room.loserScore = player2BestScore;
+      }
+
+      await room.save();
+
+      // Broadcast battle over via socket
+      if (io) {
+        io.to(roomId).emit("battleOver", {
+          winnerId,
+          myScore: player1BestScore,
+          opponentScore: player2BestScore,
+          isDraw: winnerId === null
+        });
+      }
+
+      console.log(`🏆 Battle ${roomId} finished! Winner: ${winnerId || "Draw"}`);
+    } else {
+      await room.save();
     }
 
     res.json({
@@ -238,20 +293,6 @@ router.get("/health", (req, res) => {
       : "JDOODLE_CLIENT_ID and JDOODLE_CLIENT_SECRET are not set. Please add them to your .env file.",
     endpoint: JDOODLE_API_URL,
   });
-});
-
-// Get available questions (for testing/debugging)
-router.get("/questions", (req, res) => {
-  try {
-    const simplifiedQuestions = questions.map(q => ({
-      id: q.id,
-      title: q.title,
-      difficulty: q.difficulty,
-    }));
-    res.json(simplifiedQuestions);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch questions" });
-  }
 });
 
 module.exports = router;

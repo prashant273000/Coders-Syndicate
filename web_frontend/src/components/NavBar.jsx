@@ -28,6 +28,8 @@ const NavBar = () => {
 
   // User & Chat States
   const [dbUser, setDbUser] = useState(null); 
+  const [profileData, setProfileData] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -96,6 +98,7 @@ const NavBar = () => {
     const fetchUserFromBackend = async () => {
       if (!user) {
         setDbUser(null);
+        setProfileData(null);
         return;
       }
       try {
@@ -117,7 +120,34 @@ const NavBar = () => {
       }
     };
     fetchUserFromBackend();
-  }, [user]); 
+  }, [user]);
+
+  // Fetch user profile data when dbUser is available
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!dbUser?.uid) {
+        setProfileData(null);
+        return;
+      }
+      setLoadingProfile(true);
+      try {
+        const res = await fetch(`http://localhost:5000/api/users/profile/${dbUser.uid}`);
+        const data = await res.json();
+        if (res.ok) {
+          setProfileData(data);
+        } else {
+          console.error("Failed to fetch profile:", data.error);
+          setProfileData(null);
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        setProfileData(null);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+    fetchProfile();
+  }, [dbUser]);
   useEffect(() => {
   const fetchFriends = async () => {
     if (!dbUser?.uid) return;
@@ -463,17 +493,44 @@ const handleDeclineRequest = async (requestId) => {
   }
 };
 
-  const displayUser = dbUser
+  const displayUser = profileData
     ? {
-        name: dbUser.name, email: dbUser.email, photoURL: dbUser.picture,
-        rank: "Diamond Tier", league: "Champion's League", currentRank: "#1,024",
-        xpEarned: "24,500", docsRead: 142, battlesWon: 87, battlesLost: 12,
+        name: profileData.name,
+        email: profileData.email,
+        photoURL: profileData.photoURL,
+        rank: profileData.tier || "Bronze Tier",
+        league: profileData.league || "Bronze League",
+        currentRank: profileData.currentRank || "#—",
+        xpEarned: profileData.xpEarned?.toLocaleString() || "0",
+        docsRead: profileData.docsRead || 0,
+        battlesWon: profileData.battlesWon || 0,
+        battlesLost: profileData.battlesLost || 0,
+      }
+    : dbUser
+    ? {
+        name: dbUser.name || user?.displayName,
+        email: dbUser.email || user?.email,
+        photoURL: dbUser.picture || user?.photoURL,
+        rank: loadingProfile ? "Loading..." : "—",
+        league: loadingProfile ? "..." : "—",
+        currentRank: loadingProfile ? "..." : "—",
+        xpEarned: loadingProfile ? "..." : "0",
+        docsRead: 0,
+        battlesWon: 0,
+        battlesLost: 0,
       }
     : user
     ? {
-        name: user.displayName, email: user.email, photoURL: user.photoURL,
-        rank: "—", league: "—", currentRank: "—", xpEarned: "—",
-        docsRead: 0, battlesWon: 0, battlesLost: 0,
+        name: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        rank: "—",
+        league: "—",
+        currentRank: "—",
+        xpEarned: "—",
+        docsRead: 0,
+        battlesWon: 0,
+        battlesLost: 0,
       }
     : null;
 
