@@ -11,6 +11,8 @@ const Arena = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const pollingRef = useRef(null); // to track polling interval
+  const [showFriendInvite, setShowFriendInvite] = useState(false);
+  const [friends, setFriends] = useState([]);
 
   // Poll backend every 2 seconds while searching
   useEffect(() => {
@@ -30,13 +32,15 @@ const Arena = () => {
           },
         });
 
+        
+
         const data = await res.json();
 
         if (data.status === "matched") {
           clearInterval(pollingRef.current);
           setIsSearching(false);
           // Navigate to battle with matchId and players
-          navigate("/battle", {
+          navigate(`/battle/${data.matchId}`, {
             state: {
               matchId: data.matchId,
               players: data.players,
@@ -57,21 +61,46 @@ const Arena = () => {
     return () => clearInterval(pollingRef.current);
   }, [isSearching]);
 
-  const handleModeClick = (modeId) => {
-    if (modeId === "quick") {
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-      setIsSearching(true);
-    }
-  };
+const handleModeClick = (modeId) => {
+  if (modeId === "quick") {
+    if (!user) { navigate("/login"); return; }
+    setIsSearching(true);
+  }
+  if (modeId === "friendly") {
+    if (!user) { navigate("/login"); return; }
+    setShowFriendInvite(true); // open friend picker modal
+  }
+};
 
   const handleCancel = () => {
     clearInterval(pollingRef.current);
     setIsSearching(false);
   };
 
+  // 4. Friendly invite handler
+const handleInviteFriend = async (friendUid) => {
+  const token = await user.getIdToken();
+  const res = await fetch(`${API_URL}/api/match/invite-friend`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ senderUid: user.uid, friendUid }),
+  });
+  const data = await res.json();
+  if (res.ok) {
+    // Poll for acceptance then navigate
+    const poll = setInterval(async () => {
+      const r = await fetch(`${API_URL}/api/match/status/${data.matchId}`);
+      const d = await r.json();
+      if (d.status === "accepted") {
+        clearInterval(poll);
+        navigate(`/battle/${data.roomId}`);
+      }
+    }, 2000);
+  }
+}
   const gameModes = [
     {
       id: "quick",
