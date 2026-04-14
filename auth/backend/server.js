@@ -33,9 +33,14 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./routes/auth")); //Auth Route
-app.use("/api/match", require("./routes/MatchRoutes")); //Match Route
+app.use("/api/versus", require("./routes/matchRoutes")); //Match Route
 app.use("/api/questions", require("./routes/questionRoutes"));
 app.use("/api/judge", require("./routes/judgeRoutes"));
+app.use("/api/voice",       require("./routes/voice"));
+app.use("/api/friends",     require("./routes/friends"));
+app.use("/api/match",       require("./routes/match"));       // friendly match (Branch 1)
+app.use("/api/leaderboard", require("./routes/leaderboard"));
+
 app.use("/api/user", require("./routes/userRoutes"));
 
 const userSockets = {}; // { uid: socketId }

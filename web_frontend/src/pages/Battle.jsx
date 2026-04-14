@@ -10,7 +10,7 @@ const Battle = () => {
   const location = useLocation();
   const { user } = useContext(AuthContext);
 
-  const matchId = location.state?.matchId;
+  const matchId = location.state?.matchId || location.state?.roomId;;
   const socketRef = useRef(null);
 
   // Opponent state

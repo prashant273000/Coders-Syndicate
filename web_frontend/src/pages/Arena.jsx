@@ -23,7 +23,7 @@ const Arena = () => {
       try {
         const token = await user.getIdToken();
 
-        const res = await fetch(`${API_URL}/api/match/find`, {
+        const res = await fetch(`${API_URL}/api/versus/find`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

@@ -1,6 +1,6 @@
 //Logic of match Rooms
 
-const Match = require("../models/match");
+const Match = require("../models/versus");
 const User = require("../models/user");
 const getLevelFromXP = require("../utils/levels");
 const getTier = require("../utils/tier");
