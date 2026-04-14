@@ -10,7 +10,10 @@ const Battle = () => {
   const location = useLocation();
   const { user } = useContext(AuthContext);
 
-  const matchId = location.state?.matchId || location.state?.roomId;;
+  const matchId =
+  location.state?.matchId ||
+  location.state?.roomId ||
+  location.pathname.split("/").pop(); // ✅ fallback
   const socketRef = useRef(null);
 
   // Opponent state

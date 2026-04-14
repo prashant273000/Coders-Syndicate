@@ -31,4 +31,4 @@ const matchSchema = new mongoose.Schema(
 
 
 
-module.exports = mongoose.model("Match", matchSchema);
+module.exports = mongoose.model("Versus", matchSchema);

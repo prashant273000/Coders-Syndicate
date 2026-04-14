@@ -8,14 +8,17 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+
   name: {
     type: String,
     required: true,
   },
+
   email: {
     type: String,
     required: true,
   },
+
   picture: {
     type: String,
     default: "",
@@ -25,6 +28,15 @@ const userSchema = new mongoose.Schema({
   tier: { type: String, default: "Bronze" },
   wins: { type: Number, default: 0 },
   losses: { type: Number, default: 0 },
+  friends: [
+    {
+    uid: String,
+    name: String,
+    picture: String,
+    status: { type: String, default: "Offline" }
+    }
+  ],
+
   createdAt: {
     type: Date,
     default: Date.now,
