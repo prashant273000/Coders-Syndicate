@@ -25,7 +25,7 @@ const App = () => (
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/arena" element={<Arena />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/battle" element={<Battle />} />
+        <Route path="/battle/:roomId" element={<Battle />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
